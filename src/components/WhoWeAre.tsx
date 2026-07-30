@@ -66,7 +66,7 @@ export function WhoWeAre() {
             <div>
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-lime px-3 py-1 text-xs font-black uppercase text-neutral-950">
-                  Co-Founder & Developer
+                  Founder & Developer
                 </span>
                 <a
                   href="https://github.com/pritam3606"
@@ -104,7 +104,7 @@ export function WhoWeAre() {
             <div>
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-sunny px-3 py-1 text-xs font-black uppercase text-neutral-950">
-                  Co-Founder & Developer
+                  Founder & Developer
                 </span>
                 <a
                   href="https://github.com/Pcreates97"
