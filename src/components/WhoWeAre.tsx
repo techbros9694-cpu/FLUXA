@@ -1,4 +1,5 @@
 import { Github, ShieldCheck, Users, Sparkles } from "lucide-react";
+import { ShinyText } from "./ShinyText";
 
 export function WhoWeAre() {
   return (
@@ -7,14 +8,14 @@ export function WhoWeAre() {
       <div className="mx-auto max-w-4xl rounded-3xl border border-ink/10 bg-white p-6 sm:p-10 text-center shadow-float backdrop-blur-md dark:bg-surface dark:border-white/10">
         <span className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-ink/80 shadow-float dark:bg-surface-2 dark:text-white/90 dark:border-white/10">
           <Sparkles className="h-3.5 w-3.5 text-lime-bright" />
-          Who We Are
+          <ShinyText text="Who We Are" color="currentColor" shineColor="#a3e635" speed={2.5} />
         </span>
         <h2 className="mt-4 text-3xl font-black text-ink sm:text-5xl dark:text-white leading-tight">
           Building{" "}
           <span className="inline-block rounded-2xl bg-lime px-3.5 py-1 text-neutral-950 font-black shadow-sm">
             FLUXA
           </span>{" "}
-          for Everyone
+          <ShinyText text="for Everyone" color="currentColor" shineColor="#a3e635" speed={2} />
         </h2>
         <div className="mt-6 space-y-4 text-base sm:text-lg font-medium text-ink/80 leading-relaxed dark:text-white/90">
           <p>
@@ -53,7 +54,12 @@ export function WhoWeAre() {
       <div className="mt-16 sm:mt-20">
         <div className="text-center">
           <h3 className="text-2xl sm:text-4xl font-black text-ink dark:text-white">
-            Meet the Founders
+            <ShinyText
+              text="Meet the Founders"
+              color="currentColor"
+              shineColor="#84cc16"
+              speed={2.5}
+            />
           </h3>
           <p className="mt-2 text-sm sm:text-base font-semibold text-ink/70 dark:text-white/70">
             The minds and craft behind FLUXA

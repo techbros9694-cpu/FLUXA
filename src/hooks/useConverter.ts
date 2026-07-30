@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   WorkflowStep,
-  VideoMetadata,
   SupportedOutputFormat,
   AdvancedSettings,
   ValidationError,
@@ -20,13 +19,13 @@ import { ConversionService } from "@/services/conversionService";
 import { DownloadService } from "@/services/downloadService";
 
 export const FUNNY_LOADING_MESSAGES = [
-  "🎬 Negotiating with pixels...",
+  "🎬 Negotiating with pixels in WebWorker...",
   "📼 Teaching video how to change outfits...",
   "🐧 Convincing FFmpeg politely...",
   "🚀 Compressing cinematic greatness...",
   "🧃 Pouring extra smoothness...",
   "☕ Giving your video coffee...",
-  "🧠 Thinking really hard...",
+  "🧠 Thinking really fast...",
   "🎉 Almost there...",
 ];
 
@@ -52,8 +51,9 @@ export function useConverter() {
   const [progress, setProgress] = useState<RealProgressState>({
     percentage: 0,
     timeSeconds: 0,
+    etaSeconds: 0,
     funnyMessage: FUNNY_LOADING_MESSAGES[0],
-    statusText: "Initializing engine...",
+    statusText: "Initializing worker engine...",
   });
 
   const [error, setError] = useState<ValidationError | null>(null);
@@ -61,7 +61,7 @@ export function useConverter() {
   const isConvertingRef = useRef<boolean>(false);
   const cancelRequestedRef = useRef<boolean>(false);
 
-  // Preload FFmpeg in background when hook mounts
+  // Preload FFmpeg worker in background when hook mounts
   useEffect(() => {
     FFmpegService.preload();
   }, []);
@@ -85,7 +85,7 @@ export function useConverter() {
   }, [step]);
 
   /**
-   * Set global output format & apply to all items in queue, ensuring target format never matches item's input format
+   * Set global output format & apply to all waiting items in queue
    */
   const setSelectedFormat = useCallback((format: SupportedOutputFormat) => {
     setSelectedFormatState(format);
@@ -112,7 +112,7 @@ export function useConverter() {
   }, []);
 
   /**
-   * Update output format for an individual item, preventing same format as input
+   * Update output format for an individual item
    */
   const updateItemFormat = useCallback((id: string, format: SupportedOutputFormat) => {
     setQueue((prev) =>
@@ -126,7 +126,7 @@ export function useConverter() {
   }, []);
 
   /**
-   * Handle multiple uploaded files (Drag & Drop or Picker)
+   * Handle multiple uploaded files
    */
   const handleMultipleFileUpload = useCallback(
     async (fileList: FileList | File[]) => {
@@ -135,12 +135,11 @@ export function useConverter() {
 
       if (files.length === 0) return;
 
-      // 1. Check browser capability
       const cap = ValidationService.checkBrowserCapabilities();
       if (!cap.supported) {
         setError({
           title: "Browser Incompatible",
-          message: cap.reason || "Your browser lacks WebAssembly support.",
+          message: cap.reason || "Your browser lacks WebAssembly/WebWorker support.",
         });
         setStep("error");
         return;
@@ -171,7 +170,7 @@ export function useConverter() {
         return;
       }
 
-      // Analyze files in parallel for maximum speed
+      // Extract metadata in parallel
       const metadataList = await Promise.all(
         validFiles.map((f) => MetadataService.extractMetadata(f).catch(() => null)),
       );
@@ -195,7 +194,6 @@ export function useConverter() {
       setQueue((prev) => {
         const combined = [...prev, ...newItems];
 
-        // Check if all items in combined queue share the same input format
         const allInputFormats = combined.map(getItemInputFormat);
         const firstFmt = allInputFormats[0];
         const allShareSame =
@@ -246,7 +244,6 @@ export function useConverter() {
           return [];
         }
 
-        // Re-evaluate if remaining items share the same input format
         const allInputFormats = updated.map(getItemInputFormat);
         const firstFmt = allInputFormats[0];
         const allShareSame =
@@ -286,7 +283,7 @@ export function useConverter() {
   }, []);
 
   /**
-   * Start sequential conversion of all waiting items in queue
+   * Start conversion of all waiting items in queue using Web Worker
    */
   const startConversion = useCallback(async () => {
     if (queue.length === 0) return;
@@ -297,17 +294,12 @@ export function useConverter() {
 
     try {
       setEngineLoading(true);
-      setEngineStatus("Initializing FFmpeg WebAssembly Engine...");
+      setEngineStatus("Initializing FFmpeg WebWorker...");
 
-      // 1. Initialize FFmpeg instance once
-      const ffmpeg = await FFmpegService.getInstance(
-        () => {},
-        (status) => setEngineStatus(status),
-      );
+      await FFmpegService.initEngine((status) => setEngineStatus(status));
 
       setEngineLoading(false);
 
-      // 2. Convert each waiting item sequentially
       for (let i = 0; i < queue.length; i++) {
         if (cancelRequestedRef.current) {
           break;
@@ -316,22 +308,19 @@ export function useConverter() {
         const currentItem = queue[i];
         if (currentItem.status === "completed") continue;
 
-        // Yield to browser UI thread to keep interface responsive
+        // Yield to UI thread to maintain smoothness
         await new Promise((resolve) => setTimeout(resolve, 16));
 
-        // Revoke old download URL if re-converting item
         if (currentItem.result?.downloadUrl) {
           DownloadService.revokeUrl(currentItem.result.downloadUrl);
         }
 
-        // Update item status to converting
         setQueue((prev) =>
           prev.map((item, idx) =>
             idx === i ? { ...item, status: "converting", progress: 0 } : item,
           ),
         );
 
-        // Extract metadata if missing
         let meta = currentItem.metadata;
         if (!meta) {
           try {
@@ -358,34 +347,32 @@ export function useConverter() {
           }
         }
 
-        // Convert item
         try {
-          // Collect already generated output filenames in this queue batch
           const existingFilenames = queue
             .map((item) => item.result?.filename)
             .filter((name): name is string => Boolean(name));
 
           const { outputData, outputFilename } = await ConversionService.convertVideo(
-            ffmpeg,
+            currentItem.id,
             currentItem.file,
             meta,
             currentItem.outputFormat,
             currentItem.advancedSettings,
-            (pct, timeSec) => {
+            (payload) => {
               setQueue((prev) =>
-                prev.map((item, idx) => (idx === i ? { ...item, progress: pct } : item)),
+                prev.map((item, idx) => (idx === i ? { ...item, progress: payload.pct } : item)),
               );
               setProgress({
-                percentage: pct,
-                timeSeconds: timeSec,
+                percentage: payload.pct,
+                timeSeconds: payload.timeSec,
+                etaSeconds: payload.remainingSec,
                 funnyMessage: FUNNY_LOADING_MESSAGES[0],
-                statusText: `Converting ${currentItem.file.name} (${pct}%)`,
+                statusText: `${payload.stage} (${payload.pct}%)`,
               });
             },
             existingFilenames,
           );
 
-          // Create download blob & url
           const { blob, url } = DownloadService.createDownloadUrl(
             outputData,
             currentItem.outputFormat,
@@ -417,10 +404,9 @@ export function useConverter() {
           );
         } catch (err: unknown) {
           const errMsg =
-            err instanceof Error ? err.message : "Conversion failed in browser FFmpeg.";
+            err instanceof Error ? err.message : "Conversion failed in browser FFmpeg worker.";
           console.error(`Failed converting ${currentItem.file.name}:`, err);
 
-          // Mark item as failed and continue remaining queue (Requirement 9)
           setQueue((prev) =>
             prev.map((item, idx) =>
               idx === i
@@ -442,7 +428,7 @@ export function useConverter() {
       isConvertingRef.current = false;
       setEngineLoading(false);
       const errorMessage =
-        err instanceof Error ? err.message : "Conversion processing failed inside browser.";
+        err instanceof Error ? err.message : "Conversion processing failed inside browser worker.";
       setError({
         title: "Batch Conversion Error",
         message: errorMessage,

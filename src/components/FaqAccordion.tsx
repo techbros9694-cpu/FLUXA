@@ -4,6 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { ShinyText } from "./ShinyText";
 
 const FAQS = [
   { q: "Can this convert everything?", a: "No. Only emotionally." },
@@ -16,7 +17,7 @@ export function FaqAccordion() {
   return (
     <section className="relative z-10 mx-auto max-w-3xl px-6 py-20">
       <h2 className="text-center text-4xl font-black text-ink sm:text-5xl dark:text-white">
-        FAQ, kinda
+        <ShinyText text="FAQ, kinda" color="currentColor" shineColor="#a3e635" speed={2.5} />
       </h2>
       <p className="mt-3 text-center text-ink/60 dark:text-white/70">
         Real questions. Fake answers.

@@ -1,5 +1,6 @@
 import { Zap, Film, Shield, Laptop, Sparkles, HeartHandshake } from "lucide-react";
 import ScrollStack, { ScrollStackItem } from "./ScrollStack";
+import { ShinyText } from "./ShinyText";
 
 const FEATURES = [
   {
@@ -38,14 +39,24 @@ export function FeatureCards() {
       <div className="text-center mb-10">
         <div className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white/80 dark:bg-surface/80 px-4 py-1.5 text-xs sm:text-sm font-bold text-ink dark:text-white shadow-sm backdrop-blur-md mb-4">
           <Sparkles className="h-4 w-4 text-lime" />
-          <span>Smooth Stacking Experience</span>
+          <ShinyText
+            text="Smooth Stacking Experience"
+            color="currentColor"
+            shineColor="#a3e635"
+            speed={2.5}
+          />
         </div>
         <h2 className="text-4xl font-black text-ink sm:text-5xl lg:text-6xl dark:text-white tracking-tight">
           Why people{" "}
           <span className="rounded-2xl bg-lime px-3 text-neutral-950 font-black inline-block">
             smile
           </span>{" "}
-          using it
+          <ShinyText
+            text="using it"
+            color="currentColor"
+            shineColor="#a3e635"
+            speed={2}
+          />
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-base sm:text-lg text-ink/60 dark:text-white/70">
           Fast. Friendly. Free. Slightly unhinged. Scroll through the feature stack below.

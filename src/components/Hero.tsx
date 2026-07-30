@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { FloatingIcons } from "./FloatingIcons";
+import { ShinyText } from "./ShinyText";
 
 const SUBTITLES = [
   "Making MP4s behave since today.",
@@ -52,7 +53,12 @@ export function Hero() {
       <div className="relative z-10 mx-auto max-w-5xl px-6 text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-ink/70 shadow-float dark:bg-surface dark:text-white/90 dark:border-white/10">
           <span className="h-2 w-2 rounded-full bg-lime-bright animate-pulse" />
-          Open source · v0.0.chaotic
+          <ShinyText
+            text="Open source · v0.0.chaotic"
+            color="currentColor"
+            shineColor="#a3e635"
+            speed={2.5}
+          />
         </span>
         <h1
           ref={headingRef}
@@ -72,7 +78,12 @@ export function Hero() {
           ))}
         </h1>
         <p className="mt-6 text-lg font-medium text-ink/70 sm:text-xl dark:text-white/80">
-          MP4? MOV? AVI? MKV? Yeah… we got you.
+          <ShinyText
+            text="MP4? MOV? AVI? MKV? Yeah… we got you."
+            color="currentColor"
+            shineColor="#84cc16"
+            speed={2}
+          />
         </p>
         <p className="mt-3 min-h-[1.75rem] text-base text-ink/60 font-mono dark:text-white/70">
           {text}

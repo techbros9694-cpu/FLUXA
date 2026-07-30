@@ -6,6 +6,7 @@ import { Sparkles, Heart, Zap, Shield, ArrowDown } from "lucide-react";
 import { FloatingIcons } from "@/components/FloatingIcons";
 import { WhoWeAre } from "@/components/WhoWeAre";
 import { Footer } from "@/components/Footer";
+import { ShinyText } from "@/components/ShinyText";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -155,7 +156,12 @@ function AboutPage() {
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-ink/80 shadow-float dark:bg-surface dark:text-white/90 dark:border-white/10">
                 <Sparkles className="h-3.5 w-3.5 text-lime-bright animate-spin" />
-                About FLUXA
+                <ShinyText
+                  text="About FLUXA"
+                  color="currentColor"
+                  shineColor="#a3e635"
+                  speed={2.5}
+                />
               </span>
               <h1 className="mt-4 text-4xl font-black text-ink sm:text-7xl dark:text-white leading-tight">
                 Hey 👋 <br />
@@ -204,7 +210,12 @@ function AboutPage() {
             <div className="flex items-center justify-center gap-2 sm:gap-3">
               <Sparkles className="h-5 w-5 sm:h-7 sm:w-7 text-lime-bright animate-pulse" />
               <h2 className="text-center text-2xl font-black text-ink dark:text-white sm:text-5xl">
-                The (very serious) timeline
+                <ShinyText
+                  text="The (very serious) timeline"
+                  color="currentColor"
+                  shineColor="#a3e635"
+                  speed={2.5}
+                />
               </h2>
               <Sparkles className="h-5 w-5 sm:h-7 sm:w-7 text-sunny animate-pulse" />
             </div>

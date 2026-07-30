@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { Github, Moon, Sun } from "lucide-react";
+import { ShinyText } from "./ShinyText";
 
 const links = [
   { to: "/", label: "Home" },
@@ -72,7 +73,13 @@ export function FloatingNavbar() {
           className="flex h-8 sm:h-10 items-center gap-1 sm:gap-1.5 rounded-full bg-ink px-2.5 sm:px-4 text-xs sm:text-sm font-black text-white hover:scale-105 transition-transform shrink-0 dark:bg-white dark:text-neutral-950"
         >
           <span className="text-xs sm:text-base">🎬</span>
-          <span>FLUXA</span>
+          <ShinyText
+            text="FLUXA"
+            color="currentColor"
+            shineColor="#a3e635"
+            speed={2.5}
+            className="font-black"
+          />
         </Link>
 
         {/* Links section */}

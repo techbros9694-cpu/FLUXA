@@ -1,4 +1,5 @@
 import { Github, Heart, Coffee } from "lucide-react";
+import { ShinyText } from "./ShinyText";
 
 export function Footer() {
   return (
@@ -7,7 +8,14 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-3">
           <div>
             <div className="flex items-center gap-2 text-xl font-black text-ink dark:text-white">
-              <span>🎬</span> FLUXA
+              <span>🎬</span>
+              <ShinyText
+                text="FLUXA"
+                color="currentColor"
+                shineColor="#a3e635"
+                speed={2.5}
+                className="font-black"
+              />
             </div>
             <p className="mt-3 text-sm text-ink/60 max-w-xs dark:text-white/70">
               Made with <Heart className="inline h-4 w-4 fill-lime-bright text-lime-bright" /> and

@@ -298,7 +298,7 @@ export function ConverterPanel() {
 
   return (
     <section id="convert" className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6 pb-20">
-      <div className="rounded-[2.5rem] border border-ink/5 bg-white p-6 sm:p-10 shadow-float dark:bg-surface dark:border-white/10 transition-all">
+      <div className="rounded-[2rem] sm:rounded-[2.5rem] border border-ink/5 bg-white p-4 sm:p-8 md:p-10 shadow-float dark:bg-surface dark:border-white/10 transition-all">
         {/* ================= STEP 1: UPLOAD AREA ================= */}
         {step === "upload" && queue.length === 0 && (
           <div
@@ -314,24 +314,24 @@ export function ConverterPanel() {
               const files = e.dataTransfer.files;
               if (files && files.length > 0) handleMultipleFileUpload(files);
             }}
-            className={`relative rounded-[2rem] border-4 border-dashed p-8 sm:p-12 text-center transition-colors ${
+            className={`relative rounded-[1.75rem] sm:rounded-[2rem] border-3 sm:border-4 border-dashed p-6 sm:p-10 md:p-12 text-center transition-colors ${
               dragging
                 ? "border-lime-bright bg-lime/20"
                 : "border-ink/15 bg-surface hover:bg-surface-2 dark:border-white/20 dark:bg-surface-2/60 dark:hover:bg-surface-2"
             }`}
           >
-            <div className="mx-auto grid h-20 w-20 place-items-center rounded-3xl bg-ink text-lime shadow-float dark:bg-lime dark:text-neutral-950">
-              <Upload className="h-8 w-8" />
+            <div className="mx-auto grid h-16 w-16 sm:h-20 sm:w-20 place-items-center rounded-2xl sm:rounded-3xl bg-ink text-lime shadow-float dark:bg-lime dark:text-neutral-950">
+              <Upload className="h-7 w-7 sm:h-8 sm:w-8" />
             </div>
-            <p className="mt-5 text-2xl sm:text-3xl font-black text-ink dark:text-white tracking-tight">
+            <p className="mt-4 sm:mt-5 text-xl sm:text-3xl font-black text-ink dark:text-white tracking-tight">
               📂 Drop video files here
             </p>
-            <p className="mt-2 text-sm font-medium text-ink/60 dark:text-white/70">
+            <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm font-medium text-ink/60 dark:text-white/70">
               {DROP_PROMPTS[promptIdx]}
             </p>
-            <label className="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-bold text-white hover:scale-105 transition-transform dark:bg-lime dark:text-neutral-950 dark:hover:bg-lime-bright shadow-md">
-              <FileVideo className="h-4 w-4" />
-              Select Video Files (Batch Supported)
+            <label className="mt-5 sm:mt-6 inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-6 py-3.5 text-xs sm:text-sm font-bold text-white hover:scale-105 active:scale-95 transition-transform dark:bg-lime dark:text-neutral-950 dark:hover:bg-lime-bright shadow-md w-full sm:w-auto">
+              <FileVideo className="h-4 w-4 shrink-0" />
+              <span>Select Video Files (Batch Supported)</span>
               <input
                 type="file"
                 accept="video/*,image/gif"
@@ -344,10 +344,12 @@ export function ConverterPanel() {
                 }}
               />
             </label>
-            <div className="mt-4 text-xs font-semibold text-ink/40 dark:text-white/40 flex items-center justify-center gap-1.5">
-              <Info className="h-3.5 w-3.5 text-lime" />
-              Batch conversion ready. MP4, MOV, MKV, AVI, WEBM, WMV, GIF, MP3 & more. Processed 100%
-              client-side.
+            <div className="mt-4 text-[11px] sm:text-xs font-semibold text-ink/40 dark:text-white/40 flex items-center justify-center gap-1.5 px-2">
+              <Info className="h-3.5 w-3.5 text-lime shrink-0" />
+              <span>
+                Batch conversion ready. MP4, MOV, MKV, AVI, WEBM, WMV, GIF, MP3 & more. Processed
+                100% client-side.
+              </span>
             </div>
           </div>
         )}
@@ -414,10 +416,10 @@ export function ConverterPanel() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-ink border border-ink/10 shadow-sm hover:bg-surface dark:bg-surface dark:text-white dark:border-white/10 dark:hover:bg-surface-2">
-                    <Plus className="h-3.5 w-3.5 text-lime" />
-                    Add Files
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  <label className="inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-xs font-bold text-ink border border-ink/10 shadow-sm hover:bg-surface active:scale-95 transition-transform dark:bg-surface dark:text-white dark:border-white/10 dark:hover:bg-surface-2 flex-1 sm:flex-initial">
+                    <Plus className="h-4 w-4 text-lime shrink-0" />
+                    <span>Add Files</span>
                     <input
                       type="file"
                       accept="video/*,image/gif"
@@ -435,10 +437,10 @@ export function ConverterPanel() {
                     <button
                       type="button"
                       onClick={downloadAllAsZip}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-lime px-4 py-2 text-xs font-black text-neutral-950 hover:bg-lime-bright shadow-md cursor-pointer"
+                      className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-lime px-4 py-2.5 text-xs font-black text-neutral-950 hover:bg-lime-bright active:scale-95 transition-transform shadow-md cursor-pointer flex-1 sm:flex-initial"
                     >
-                      <Archive className="h-3.5 w-3.5" />
-                      Download All (ZIP)
+                      <Archive className="h-4 w-4 shrink-0" />
+                      <span>Download All (ZIP)</span>
                     </button>
                   )}
 
@@ -446,19 +448,19 @@ export function ConverterPanel() {
                     <button
                       type="button"
                       onClick={cancelConversion}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-3.5 py-2 text-xs font-bold text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500/20 cursor-pointer"
+                      className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-red-500/10 px-4 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500/20 active:scale-95 transition-transform cursor-pointer flex-1 sm:flex-initial"
                     >
-                      <Square className="h-3.5 w-3.5" />
-                      Cancel
+                      <Square className="h-4 w-4 shrink-0" />
+                      <span>Cancel</span>
                     </button>
                   ) : (
                     <button
                       type="button"
                       onClick={clearQueue}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-bold text-ink/70 hover:text-ink border border-ink/10 shadow-sm dark:bg-surface dark:text-white/80 dark:border-white/10 dark:hover:text-white cursor-pointer"
+                      className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-xs font-bold text-ink/70 hover:text-ink border border-ink/10 shadow-sm active:scale-95 transition-transform dark:bg-surface dark:text-white/80 dark:border-white/10 dark:hover:text-white cursor-pointer flex-1 sm:flex-initial"
                     >
-                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                      Clear Queue
+                      <Trash2 className="h-4 w-4 text-red-500 shrink-0" />
+                      <span>Clear Queue</span>
                     </button>
                   )}
                 </div>
@@ -501,7 +503,7 @@ export function ConverterPanel() {
                     </p>
                   </div>
 
-                  <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+                  <div className="grid gap-2.5 sm:gap-3 grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7">
                     {ALL_OUTPUT_FORMATS.filter((fmt) => {
                       if (
                         allItemsShareFormat &&
@@ -518,22 +520,22 @@ export function ConverterPanel() {
                           key={fmt.id}
                           type="button"
                           onClick={() => setSelectedFormat(fmt.id)}
-                          className={`group relative text-center p-3 rounded-2xl border-2 transition-all cursor-pointer ${
+                          className={`group relative text-center p-2.5 sm:p-3 rounded-2xl border-2 transition-all cursor-pointer min-h-[56px] flex flex-col items-center justify-center ${
                             isSelected
                               ? "border-lime bg-lime/10 dark:bg-lime/20 shadow-md scale-105"
                               : "border-ink/10 bg-white hover:border-ink/20 dark:bg-surface dark:border-white/10 dark:hover:bg-surface-2"
                           }`}
                         >
                           <div
-                            className={`mx-auto grid h-8 w-8 place-items-center rounded-lg transition-colors ${
+                            className={`mx-auto grid h-7 w-7 sm:h-8 sm:w-8 place-items-center rounded-lg transition-colors ${
                               isSelected
                                 ? "bg-lime text-neutral-950 shadow-sm"
                                 : "bg-surface-2 text-ink dark:bg-surface-2 dark:text-white"
                             }`}
                           >
-                            <Icon className="h-4 w-4" />
+                            <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           </div>
-                          <div className="mt-1.5 text-xs font-black text-ink dark:text-white">
+                          <div className="mt-1 text-xs font-black text-ink dark:text-white">
                             {fmt.title}
                           </div>
                           {fmt.recommended && (
@@ -550,7 +552,7 @@ export function ConverterPanel() {
 
               {/* QUALITY PRESET SELECTOR BAR */}
               {step !== "converting" && (
-                <div className="rounded-2xl bg-surface/40 dark:bg-surface-2/40 border border-ink/10 dark:border-white/10 p-4 space-y-2.5">
+                <div className="rounded-2xl bg-surface/40 dark:bg-surface-2/40 border border-ink/10 dark:border-white/10 p-3.5 sm:p-4 space-y-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-1">
                     <div className="text-xs font-black uppercase tracking-wider text-ink dark:text-white flex items-center gap-1.5">
                       <SlidersHorizontal className="h-3.5 w-3.5 text-lime" />
@@ -561,7 +563,7 @@ export function ConverterPanel() {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
                     {(["Balanced", "High Quality", "Small Size"] as const).map((preset) => {
                       const isSelected = (advanced.qualityPreset || "Balanced") === preset;
                       return (
@@ -569,9 +571,9 @@ export function ConverterPanel() {
                           key={preset}
                           type="button"
                           onClick={() => setAdvanced({ ...advanced, qualityPreset: preset })}
-                          className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                          className={`flex flex-col items-center justify-center p-3 sm:p-3.5 min-h-[52px] rounded-xl border text-center transition-all cursor-pointer ${
                             isSelected
-                              ? "border-lime bg-lime/10 dark:bg-lime/20 text-ink dark:text-white font-extrabold shadow-sm scale-[1.02]"
+                              ? "border-lime bg-lime/10 dark:bg-lime/20 text-ink dark:text-white font-extrabold shadow-sm scale-[1.01]"
                               : "border-ink/10 dark:border-white/10 bg-white dark:bg-surface text-ink/70 dark:text-white/70 hover:border-ink/20 font-bold"
                           }`}
                         >
@@ -932,13 +934,13 @@ function QueueItemRow({
         </div>
 
         {/* OUTPUT FORMAT SELECTOR & STATUS BADGE */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 w-full sm:w-auto pt-2.5 sm:pt-0 border-t sm:border-t-0 border-ink/5 dark:border-white/5">
           {isWaiting && !isConvertingBatch ? (
             <Select
               value={item.outputFormat}
               onValueChange={(val) => onFormatChange(val as SupportedOutputFormat)}
             >
-              <SelectTrigger className="h-8 w-28 rounded-xl bg-surface-2 border-ink/10 text-xs font-black text-ink dark:text-white dark:border-white/10">
+              <SelectTrigger className="h-10 sm:h-8 w-28 sm:w-28 rounded-xl bg-surface-2 border-ink/10 text-xs font-black text-ink dark:text-white dark:border-white/10 shrink-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -952,37 +954,39 @@ function QueueItemRow({
               </SelectContent>
             </Select>
           ) : (
-            <div className="text-xs font-black px-2.5 py-1 rounded-xl bg-ink/5 dark:bg-white/10 text-ink dark:text-white">
+            <div className="text-xs font-black px-2.5 py-1.5 rounded-xl bg-ink/5 dark:bg-white/10 text-ink dark:text-white shrink-0">
               ➜ {item.outputFormat}
             </div>
           )}
 
-          {/* STATUS BADGE */}
-          <StatusTag status={item.status} />
+          <div className="flex items-center gap-2 shrink-0">
+            {/* STATUS BADGE */}
+            <StatusTag status={item.status} />
 
-          {/* DOWNLOAD BUTTON FOR COMPLETED ITEM */}
-          {isCompleted && (
-            <button
-              type="button"
-              onClick={onDownload}
-              className="inline-flex items-center gap-1 rounded-xl bg-lime px-3 py-1.5 text-xs font-black text-neutral-950 hover:bg-lime-bright shadow-sm cursor-pointer transition-transform hover:scale-105"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Download
-            </button>
-          )}
+            {/* DOWNLOAD BUTTON FOR COMPLETED ITEM */}
+            {isCompleted && (
+              <button
+                type="button"
+                onClick={onDownload}
+                className="inline-flex min-h-[40px] items-center gap-1 rounded-xl bg-lime px-3.5 py-2 text-xs font-black text-neutral-950 hover:bg-lime-bright shadow-sm cursor-pointer transition-transform active:scale-95"
+              >
+                <Download className="h-4 w-4" />
+                <span>Download</span>
+              </button>
+            )}
 
-          {/* REMOVE BUTTON WHEN WAITING */}
-          {isWaiting && !isConvertingBatch && (
-            <button
-              type="button"
-              onClick={onRemove}
-              className="p-1.5 rounded-lg text-ink/40 hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
-              title="Remove file"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          )}
+            {/* REMOVE BUTTON WHEN WAITING */}
+            {isWaiting && !isConvertingBatch && (
+              <button
+                type="button"
+                onClick={onRemove}
+                className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl text-ink/40 hover:text-red-500 hover:bg-red-500/10 active:bg-red-500/20 transition-colors cursor-pointer"
+                title="Remove file"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
