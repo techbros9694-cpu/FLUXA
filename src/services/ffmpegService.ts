@@ -7,8 +7,50 @@ export class FFmpegService {
   private static isLoaded = false;
 
   /**
+   * Helper to fetch and cache FFmpeg core resources using Cache API
+   */
+  private static async getCachedUrl(url: string, mimeType: string): Promise<string> {
+    if (typeof window !== "undefined" && "caches" in window) {
+      try {
+        const cache = await caches.open("fluxa-ffmpeg-v1");
+        let response = await cache.match(url);
+        if (!response) {
+          response = await fetch(url);
+          if (response.ok) {
+            await cache.put(url, response.clone());
+          }
+        }
+        if (response && response.ok) {
+          const blob = await response.blob();
+          return URL.createObjectURL(new Blob([blob], { type: mimeType }));
+        }
+      } catch (e) {
+        console.warn("FFmpeg Cache API fallback to toBlobURL:", e);
+      }
+    }
+    return toBlobURL(url, mimeType);
+  }
+
+  /**
+   * Preload FFmpeg engine in the background when app initializes
+   */
+  static preload(): void {
+    if (this.isLoaded || this.loadingPromise) return;
+    if (typeof window !== "undefined") {
+      const run = () => {
+        this.getInstance().catch(() => {});
+      };
+      if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(run);
+      } else {
+        setTimeout(run, 1000);
+      }
+    }
+  }
+
+  /**
    * Get or initialize the singleton FFmpeg instance.
-   * Loads WASM files lazily on demand.
+   * Loads WASM files lazily on demand or from Cache API.
    */
   static async getInstance(
     onLog?: (msg: string) => void,
@@ -33,13 +75,14 @@ export class FFmpegService {
           });
         }
 
-        // Use core v0.12.6 single-threaded build from unpkg / jsdelivr
-        // Single-threaded core runs safely in all browsers without requiring COOP/COEP headers
+        // Use core v0.12.6 single-threaded build
         const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
 
-        onLoadProgress?.("Downloading WASM binaries...");
-        const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript");
-        const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm");
+        onLoadProgress?.("Loading cached WASM core...");
+        const [coreURL, wasmURL] = await Promise.all([
+          this.getCachedUrl(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+          this.getCachedUrl(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+        ]);
 
         onLoadProgress?.("Initializing conversion worker...");
         await ffmpeg.load({

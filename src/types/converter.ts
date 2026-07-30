@@ -1,5 +1,21 @@
 export type WorkflowStep = "upload" | "analyzing" | "configured" | "converting" | "done" | "error";
 
+export type ItemStatus = "waiting" | "converting" | "completed" | "failed";
+
+export interface BatchItem {
+  id: string;
+  file: File;
+  metadata: VideoMetadata | null;
+  outputFormat: SupportedOutputFormat;
+  advancedSettings: AdvancedSettings;
+  status: ItemStatus;
+  progress: number; // 0 - 100
+  funnyMessage?: string;
+  statusText?: string;
+  result?: ConversionResult | null;
+  error?: string | null;
+}
+
 export interface VideoMetadata {
   filename: string;
   fileSize: number;
@@ -46,7 +62,10 @@ export interface OutputFormatOption {
   isAudioOnly?: boolean;
 }
 
+export type QualityPreset = "High Quality" | "Balanced" | "Small Size";
+
 export interface AdvancedSettings {
+  qualityPreset: QualityPreset; // "Balanced" | "High Quality" | "Small Size"
   resolution: string; // "Same as Original" | "4K (2160p)" | "1080p" | "720p" | "480p" | "360p"
   videoCodec: string; // "Auto (Recommended)" | "H.264" | "H.265 / HEVC" | "VP9" | "AV1" | "ProRes"
   bitrate: string; // "Auto" | "16 Mbps" | "12 Mbps" | "8 Mbps" | "4 Mbps" | "2 Mbps"

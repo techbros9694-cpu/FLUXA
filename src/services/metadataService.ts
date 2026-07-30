@@ -1,4 +1,28 @@
-import { VideoMetadata } from "@/types/converter";
+import { VideoMetadata, SupportedOutputFormat } from "@/types/converter";
+
+export function getItemInputFormat(item: { file: File; metadata?: VideoMetadata | null }): string {
+  let fmt = item.metadata?.format || item.file.name.split(".").pop() || "MP4";
+  fmt = fmt.toUpperCase();
+  if (fmt === "MPG") fmt = "MPEG";
+  if (fmt === "MTS") fmt = "TS";
+  return fmt;
+}
+
+export function getValidFallbackFormat(
+  inputFormat: string,
+  preferredFormat?: SupportedOutputFormat,
+): SupportedOutputFormat {
+  if (preferredFormat && preferredFormat.toUpperCase() !== inputFormat.toUpperCase()) {
+    return preferredFormat;
+  }
+  const fallbackList: SupportedOutputFormat[] = ["MKV", "WEBM", "MOV", "MP4", "AVI"];
+  for (const f of fallbackList) {
+    if (f.toUpperCase() !== inputFormat.toUpperCase()) {
+      return f;
+    }
+  }
+  return "MKV";
+}
 
 export function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";

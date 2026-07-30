@@ -1,4 +1,5 @@
 import { SupportedOutputFormat } from "@/types/converter";
+import JSZip from "jszip";
 
 export class DownloadService {
   /**
@@ -32,7 +33,7 @@ export class DownloadService {
     format: SupportedOutputFormat,
   ): { blob: Blob; url: string } {
     const mimeType = this.getMimeType(format);
-    const blob = new Blob([data.buffer as ArrayBuffer], { type: mimeType });
+    const blob = new Blob([data], { type: mimeType });
     const url = URL.createObjectURL(blob);
     return { blob, url };
   }
@@ -47,6 +48,23 @@ export class DownloadService {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  }
+
+  /**
+   * Download all results as a single ZIP archive
+   */
+  static async downloadAllAsZip(
+    results: { filename: string; blob: Blob }[],
+    zipFilename = "videomorph-converted-videos.zip",
+  ): Promise<void> {
+    const zip = new JSZip();
+    for (const item of results) {
+      zip.file(item.filename, item.blob);
+    }
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    const zipUrl = URL.createObjectURL(zipBlob);
+    this.triggerDownload(zipUrl, zipFilename);
+    setTimeout(() => this.revokeUrl(zipUrl), 10000);
   }
 
   /**

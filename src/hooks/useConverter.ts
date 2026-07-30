@@ -4,12 +4,17 @@ import {
   VideoMetadata,
   SupportedOutputFormat,
   AdvancedSettings,
-  ConversionResult,
   ValidationError,
   RealProgressState,
+  BatchItem,
 } from "@/types/converter";
 import { ValidationService } from "@/services/validationService";
-import { MetadataService, formatBytes } from "@/services/metadataService";
+import {
+  MetadataService,
+  formatBytes,
+  getItemInputFormat,
+  getValidFallbackFormat,
+} from "@/services/metadataService";
 import { FFmpegService } from "@/services/ffmpegService";
 import { ConversionService } from "@/services/conversionService";
 import { DownloadService } from "@/services/downloadService";
@@ -26,6 +31,7 @@ export const FUNNY_LOADING_MESSAGES = [
 ];
 
 export const DEFAULT_ADVANCED_SETTINGS: AdvancedSettings = {
+  qualityPreset: "Balanced",
   resolution: "Same as Original",
   videoCodec: "Auto (Recommended)",
   bitrate: "Auto",
@@ -35,10 +41,9 @@ export const DEFAULT_ADVANCED_SETTINGS: AdvancedSettings = {
 
 export function useConverter() {
   const [step, setStep] = useState<WorkflowStep>("upload");
-  const [file, setFile] = useState<File | null>(null);
-  const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
-  const [selectedFormat, setSelectedFormat] = useState<SupportedOutputFormat>("MP4");
-  const [advanced, setAdvanced] = useState<AdvancedSettings>(DEFAULT_ADVANCED_SETTINGS);
+  const [queue, setQueue] = useState<BatchItem[]>([]);
+  const [selectedFormat, setSelectedFormatState] = useState<SupportedOutputFormat>("MP4");
+  const [advanced, setAdvancedState] = useState<AdvancedSettings>(DEFAULT_ADVANCED_SETTINGS);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [engineLoading, setEngineLoading] = useState(false);
@@ -51,11 +56,15 @@ export function useConverter() {
     statusText: "Initializing engine...",
   });
 
-  const [result, setResult] = useState<ConversionResult | null>(null);
   const [error, setError] = useState<ValidationError | null>(null);
 
-  const startTimeRef = useRef<number>(0);
-  const activeUrlRef = useRef<string | null>(null);
+  const isConvertingRef = useRef<boolean>(false);
+  const cancelRequestedRef = useRef<boolean>(false);
+
+  // Preload FFmpeg in background when hook mounts
+  useEffect(() => {
+    FFmpegService.preload();
+  }, []);
 
   // Rotate funny messages during conversion
   useEffect(() => {
@@ -76,175 +85,448 @@ export function useConverter() {
   }, [step]);
 
   /**
-   * Step 1 & 2: Handle Upload & Analyze Metadata
+   * Set global output format & apply to all items in queue, ensuring target format never matches item's input format
    */
-  const handleFileUpload = useCallback(async (uploadedFile: File) => {
-    setError(null);
-
-    // 1. Validate File
-    const validation = ValidationService.validateFile(uploadedFile);
-    if (!validation.isValid && validation.error) {
-      setError(validation.error);
-      setStep("error");
-      return;
-    }
-
-    // 2. Check browser capability
-    const cap = ValidationService.checkBrowserCapabilities();
-    if (!cap.supported) {
-      setError({
-        title: "Browser Incompatible",
-        message: cap.reason || "Your browser lacks WebAssembly support.",
-      });
-      setStep("error");
-      return;
-    }
-
-    setFile(uploadedFile);
-    setStep("analyzing");
-
-    try {
-      // Analyze file metadata
-      const meta = await MetadataService.extractMetadata(uploadedFile);
-      setMetadata(meta);
-
-      // Auto-recommend output format (if input is MOV/MKV/AVI -> recommend MP4; if input is MP4 -> recommend WEBM or MP4)
-      if (meta.format === "MP4") {
-        setSelectedFormat("MP4");
-      } else if (meta.format === "GIF") {
-        setSelectedFormat("MP4");
-      } else {
-        setSelectedFormat("MP4");
-      }
-
-      setStep("configured");
-    } catch (err: unknown) {
-      setError({
-        title: "Analysis Failed",
-        message:
-          "Failed to read video properties. The file might be corrupted or encoded with unsupported settings.",
-      });
-      setStep("error");
-    }
+  const setSelectedFormat = useCallback((format: SupportedOutputFormat) => {
+    setSelectedFormatState(format);
+    setQueue((prev) =>
+      prev.map((item) => {
+        if (item.status !== "waiting") return item;
+        const inputFmt = getItemInputFormat(item);
+        const validTarget = getValidFallbackFormat(inputFmt, format);
+        return { ...item, outputFormat: validTarget };
+      }),
+    );
   }, []);
 
   /**
-   * Step 4 & 5: Start Real FFmpeg Conversion
+   * Set global advanced settings & apply to all waiting items in queue
+   */
+  const setAdvanced = useCallback((settings: AdvancedSettings) => {
+    setAdvancedState(settings);
+    setQueue((prev) =>
+      prev.map((item) =>
+        item.status === "waiting" ? { ...item, advancedSettings: settings } : item,
+      ),
+    );
+  }, []);
+
+  /**
+   * Update output format for an individual item, preventing same format as input
+   */
+  const updateItemFormat = useCallback((id: string, format: SupportedOutputFormat) => {
+    setQueue((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const inputFmt = getItemInputFormat(item);
+        const validTarget = getValidFallbackFormat(inputFmt, format);
+        return { ...item, outputFormat: validTarget };
+      }),
+    );
+  }, []);
+
+  /**
+   * Handle multiple uploaded files (Drag & Drop or Picker)
+   */
+  const handleMultipleFileUpload = useCallback(
+    async (fileList: FileList | File[]) => {
+      setError(null);
+      const files = Array.from(fileList);
+
+      if (files.length === 0) return;
+
+      // 1. Check browser capability
+      const cap = ValidationService.checkBrowserCapabilities();
+      if (!cap.supported) {
+        setError({
+          title: "Browser Incompatible",
+          message: cap.reason || "Your browser lacks WebAssembly support.",
+        });
+        setStep("error");
+        return;
+      }
+
+      setStep("analyzing");
+
+      const validFiles: File[] = [];
+      let lastError: ValidationError | null = null;
+
+      for (const f of files) {
+        const val = ValidationService.validateFile(f);
+        if (val.isValid) {
+          validFiles.push(f);
+        } else if (val.error) {
+          lastError = val.error;
+        }
+      }
+
+      if (validFiles.length === 0) {
+        setError(
+          lastError || {
+            title: "No Valid Files",
+            message: "None of the selected files were valid video formats.",
+          },
+        );
+        setStep("error");
+        return;
+      }
+
+      // Analyze files in parallel for maximum speed
+      const metadataList = await Promise.all(
+        validFiles.map((f) => MetadataService.extractMetadata(f).catch(() => null)),
+      );
+
+      const newItems: BatchItem[] = validFiles.map((f, idx) => {
+        const meta = metadataList[idx];
+        const inputFmt = getItemInputFormat({ file: f, metadata: meta });
+        const validTarget = getValidFallbackFormat(inputFmt, selectedFormat);
+
+        return {
+          id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${idx}`,
+          file: f,
+          metadata: meta,
+          outputFormat: validTarget,
+          advancedSettings: advanced,
+          status: "waiting",
+          progress: 0,
+        };
+      });
+
+      setQueue((prev) => {
+        const combined = [...prev, ...newItems];
+
+        // Check if all items in combined queue share the same input format
+        const allInputFormats = combined.map(getItemInputFormat);
+        const firstFmt = allInputFormats[0];
+        const allShareSame =
+          allInputFormats.length > 0 && allInputFormats.every((f) => f === firstFmt);
+
+        let effectiveGlobalFormat = selectedFormat;
+        if (allShareSame && selectedFormat.toUpperCase() === firstFmt.toUpperCase()) {
+          effectiveGlobalFormat = getValidFallbackFormat(firstFmt, "MKV");
+          setSelectedFormatState(effectiveGlobalFormat);
+        }
+
+        return combined.map((item) => {
+          if (item.status !== "waiting") return item;
+          const inputFmt = getItemInputFormat(item);
+          const validTarget = getValidFallbackFormat(inputFmt, effectiveGlobalFormat);
+          return { ...item, outputFormat: validTarget };
+        });
+      });
+
+      setStep("configured");
+    },
+    [selectedFormat, advanced],
+  );
+
+  /**
+   * Single file wrapper
+   */
+  const handleFileUpload = useCallback(
+    (file: File) => {
+      handleMultipleFileUpload([file]);
+    },
+    [handleMultipleFileUpload],
+  );
+
+  /**
+   * Remove individual item from queue
+   */
+  const removeItem = useCallback(
+    (id: string) => {
+      setQueue((prev) => {
+        const target = prev.find((i) => i.id === id);
+        if (target?.result?.downloadUrl) {
+          DownloadService.revokeUrl(target.result.downloadUrl);
+        }
+        const updated = prev.filter((i) => i.id !== id);
+        if (updated.length === 0) {
+          setStep("upload");
+          return [];
+        }
+
+        // Re-evaluate if remaining items share the same input format
+        const allInputFormats = updated.map(getItemInputFormat);
+        const firstFmt = allInputFormats[0];
+        const allShareSame =
+          allInputFormats.length > 0 && allInputFormats.every((f) => f === firstFmt);
+
+        if (allShareSame && selectedFormat.toUpperCase() === firstFmt.toUpperCase()) {
+          const fallback = getValidFallbackFormat(firstFmt, "MKV");
+          setSelectedFormatState(fallback);
+
+          return updated.map((item) => {
+            if (item.status !== "waiting") return item;
+            const inputFmt = getItemInputFormat(item);
+            return { ...item, outputFormat: getValidFallbackFormat(inputFmt, fallback) };
+          });
+        }
+
+        return updated;
+      });
+    },
+    [selectedFormat],
+  );
+
+  /**
+   * Clear entire queue
+   */
+  const clearQueue = useCallback(() => {
+    setQueue((prev) => {
+      prev.forEach((item) => {
+        if (item.result?.downloadUrl) {
+          DownloadService.revokeUrl(item.result.downloadUrl);
+        }
+      });
+      return [];
+    });
+    setStep("upload");
+    setError(null);
+  }, []);
+
+  /**
+   * Start sequential conversion of all waiting items in queue
    */
   const startConversion = useCallback(async () => {
-    if (!file || !metadata) return;
+    if (queue.length === 0) return;
 
+    cancelRequestedRef.current = false;
+    isConvertingRef.current = true;
     setStep("converting");
-    setProgress({
-      percentage: 0,
-      timeSeconds: 0,
-      funnyMessage: FUNNY_LOADING_MESSAGES[0],
-      statusText: "Loading FFmpeg engine...",
-    });
-
-    startTimeRef.current = performance.now();
 
     try {
       setEngineLoading(true);
+      setEngineStatus("Initializing FFmpeg WebAssembly Engine...");
 
-      // 1. Get FFmpeg instance (lazy loads WASM if first time)
+      // 1. Initialize FFmpeg instance once
       const ffmpeg = await FFmpegService.getInstance(
-        () => {}, // log handler
+        () => {},
         (status) => setEngineStatus(status),
       );
 
       setEngineLoading(false);
-      setProgress((p) => ({ ...p, statusText: "Processing media streams..." }));
 
-      // 2. Perform real conversion
-      const { outputData, outputFilename } = await ConversionService.convertVideo(
-        ffmpeg,
-        file,
-        metadata,
-        selectedFormat,
-        advanced,
-        (pct, timeSec) => {
-          setProgress((prev) => ({
-            ...prev,
-            percentage: pct,
-            timeSeconds: timeSec,
-            statusText: `Converting frame streams... (${pct}%)`,
-          }));
-        },
-      );
+      // 2. Convert each waiting item sequentially
+      for (let i = 0; i < queue.length; i++) {
+        if (cancelRequestedRef.current) {
+          break;
+        }
 
-      // 3. Create download URL
-      const { blob, url } = DownloadService.createDownloadUrl(outputData, selectedFormat);
-      activeUrlRef.current = url;
+        const currentItem = queue[i];
+        if (currentItem.status === "completed") continue;
 
-      const outputSizeFormatted = formatBytes(outputData.byteLength);
+        // Yield to browser UI thread to keep interface responsive
+        await new Promise((resolve) => setTimeout(resolve, 16));
 
-      setResult({
-        blob,
-        downloadUrl: url,
-        filename: outputFilename,
-        outputFormat: selectedFormat,
-        originalSizeFormatted: metadata.sizeFormatted,
-        outputSizeFormatted,
-        outputSizeBytes: outputData.byteLength,
-        durationSeconds: metadata.duration,
-      });
+        // Revoke old download URL if re-converting item
+        if (currentItem.result?.downloadUrl) {
+          DownloadService.revokeUrl(currentItem.result.downloadUrl);
+        }
 
+        // Update item status to converting
+        setQueue((prev) =>
+          prev.map((item, idx) =>
+            idx === i ? { ...item, status: "converting", progress: 0 } : item,
+          ),
+        );
+
+        // Extract metadata if missing
+        let meta = currentItem.metadata;
+        if (!meta) {
+          try {
+            meta = await MetadataService.extractMetadata(currentItem.file);
+            setQueue((prev) =>
+              prev.map((item, idx) => (idx === i ? { ...item, metadata: meta } : item)),
+            );
+          } catch {
+            meta = {
+              filename: currentItem.file.name,
+              fileSize: currentItem.file.size,
+              sizeFormatted: formatBytes(currentItem.file.size),
+              format: "MP4",
+              container: "MP4",
+              videoCodec: "H.264",
+              audioCodec: "AAC",
+              resolution: "1920x1080",
+              width: 1920,
+              height: 1080,
+              duration: 60,
+              durationFormatted: "01:00",
+              fps: "30 FPS",
+            };
+          }
+        }
+
+        // Convert item
+        try {
+          // Collect already generated output filenames in this queue batch
+          const existingFilenames = queue
+            .map((item) => item.result?.filename)
+            .filter((name): name is string => Boolean(name));
+
+          const { outputData, outputFilename } = await ConversionService.convertVideo(
+            ffmpeg,
+            currentItem.file,
+            meta,
+            currentItem.outputFormat,
+            currentItem.advancedSettings,
+            (pct, timeSec) => {
+              setQueue((prev) =>
+                prev.map((item, idx) => (idx === i ? { ...item, progress: pct } : item)),
+              );
+              setProgress({
+                percentage: pct,
+                timeSeconds: timeSec,
+                funnyMessage: FUNNY_LOADING_MESSAGES[0],
+                statusText: `Converting ${currentItem.file.name} (${pct}%)`,
+              });
+            },
+            existingFilenames,
+          );
+
+          // Create download blob & url
+          const { blob, url } = DownloadService.createDownloadUrl(
+            outputData,
+            currentItem.outputFormat,
+          );
+          const outputSizeFormatted = formatBytes(outputData.byteLength);
+
+          const conversionRes = {
+            blob,
+            downloadUrl: url,
+            filename: outputFilename,
+            outputFormat: currentItem.outputFormat,
+            originalSizeFormatted: meta.sizeFormatted,
+            outputSizeFormatted,
+            outputSizeBytes: outputData.byteLength,
+            durationSeconds: meta.duration,
+          };
+
+          setQueue((prev) =>
+            prev.map((item, idx) =>
+              idx === i
+                ? {
+                    ...item,
+                    status: "completed",
+                    progress: 100,
+                    result: conversionRes,
+                  }
+                : item,
+            ),
+          );
+        } catch (err: unknown) {
+          const errMsg =
+            err instanceof Error ? err.message : "Conversion failed in browser FFmpeg.";
+          console.error(`Failed converting ${currentItem.file.name}:`, err);
+
+          // Mark item as failed and continue remaining queue (Requirement 9)
+          setQueue((prev) =>
+            prev.map((item, idx) =>
+              idx === i
+                ? {
+                    ...item,
+                    status: "failed",
+                    progress: 0,
+                    error: errMsg,
+                  }
+                : item,
+            ),
+          );
+        }
+      }
+
+      isConvertingRef.current = false;
       setStep("done");
     } catch (err: unknown) {
-      console.error("Conversion error:", err);
+      isConvertingRef.current = false;
       setEngineLoading(false);
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "An unexpected error occurred during processing inside FFmpeg.wasm.";
+        err instanceof Error ? err.message : "Conversion processing failed inside browser.";
       setError({
-        title: "Conversion Failed",
+        title: "Batch Conversion Error",
         message: errorMessage,
       });
-      setStep("error");
+      setStep("done");
     }
-  }, [file, metadata, selectedFormat, advanced]);
+  }, [queue]);
 
   /**
-   * Trigger direct file download
+   * Cancel ongoing conversion batch
    */
-  const downloadConvertedFile = useCallback(() => {
-    if (!result) return;
-    DownloadService.triggerDownload(result.downloadUrl, result.filename);
-  }, [result]);
+  const cancelConversion = useCallback(() => {
+    cancelRequestedRef.current = true;
+    isConvertingRef.current = false;
+    setStep("configured");
+    setQueue((prev) =>
+      prev.map((item) =>
+        item.status === "converting" ? { ...item, status: "waiting", progress: 0 } : item,
+      ),
+    );
+  }, []);
 
   /**
-   * Reset workflow & perform memory cleanup
+   * Download individual item output file
+   */
+  const downloadItem = useCallback(
+    (id: string) => {
+      const item = queue.find((i) => i.id === id);
+      if (item?.result) {
+        DownloadService.triggerDownload(item.result.downloadUrl, item.result.filename);
+      }
+    },
+    [queue],
+  );
+
+  /**
+   * Download all completed items as a single ZIP archive
+   */
+  const downloadAllAsZip = useCallback(async () => {
+    const completedItems = queue
+      .filter((item) => item.status === "completed" && item.result)
+      .map((item) => ({
+        filename: item.result!.filename,
+        blob: item.result!.blob,
+      }));
+
+    if (completedItems.length === 0) return;
+
+    if (completedItems.length === 1) {
+      DownloadService.triggerDownload(
+        queue.find((i) => i.status === "completed")!.result!.downloadUrl,
+        completedItems[0].filename,
+      );
+      return;
+    }
+
+    await DownloadService.downloadAllAsZip(completedItems, "videomorph-batch-converted.zip");
+  }, [queue]);
+
+  /**
+   * Reset workflow and revoke all blob URLs
    */
   const resetWorkflow = useCallback(() => {
-    if (activeUrlRef.current) {
-      DownloadService.revokeUrl(activeUrlRef.current);
-      activeUrlRef.current = null;
-    }
-
-    setStep("upload");
-    setFile(null);
-    setMetadata(null);
-    setSelectedFormat("MP4");
-    setAdvanced(DEFAULT_ADVANCED_SETTINGS);
-    setShowAdvanced(false);
-    setProgress({
-      percentage: 0,
-      timeSeconds: 0,
-      funnyMessage: FUNNY_LOADING_MESSAGES[0],
-      statusText: "",
+    cancelRequestedRef.current = true;
+    isConvertingRef.current = false;
+    queue.forEach((item) => {
+      if (item.result?.downloadUrl) {
+        DownloadService.revokeUrl(item.result.downloadUrl);
+      }
     });
-    setResult(null);
+    setQueue([]);
+    setStep("upload");
+    setSelectedFormatState("MP4");
+    setAdvancedState(DEFAULT_ADVANCED_SETTINGS);
+    setShowAdvanced(false);
     setError(null);
-  }, []);
+  }, [queue]);
 
   return {
     step,
-    file,
-    metadata,
+    queue,
     selectedFormat,
     setSelectedFormat,
+    updateItemFormat,
     advanced,
     setAdvanced,
     showAdvanced,
@@ -252,11 +534,15 @@ export function useConverter() {
     engineLoading,
     engineStatus,
     progress,
-    result,
     error,
     handleFileUpload,
+    handleMultipleFileUpload,
+    removeItem,
+    clearQueue,
     startConversion,
-    downloadConvertedFile,
+    cancelConversion,
+    downloadItem,
+    downloadAllAsZip,
     resetWorkflow,
   };
 }
