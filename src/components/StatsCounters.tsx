@@ -35,10 +35,10 @@ export function StatsCounters() {
     <section className="relative z-10 mx-auto max-w-6xl px-6 py-20">
       <div
         ref={ref}
-        className="grid grid-cols-2 gap-4 rounded-[2.5rem] bg-ink p-8 text-center md:grid-cols-4"
+        className="grid grid-cols-2 gap-4 rounded-[2.5rem] bg-ink p-8 text-center md:grid-cols-4 dark:bg-surface-2 dark:border dark:border-white/10"
       >
         {STATS.map((s) => (
-          <div key={s.label} className="rounded-3xl bg-white/5 p-6">
+          <div key={s.label} className="rounded-3xl bg-white/10 p-6 dark:bg-surface">
             <div className="text-5xl font-black text-lime">
               {s.value < 0 ? (
                 <span>{s.suffix}</span>
@@ -49,11 +49,11 @@ export function StatsCounters() {
                 </>
               )}
             </div>
-            <p className="mt-2 text-sm font-semibold text-white/70">{s.label}</p>
+            <p className="mt-2 text-sm font-semibold text-white/80 dark:text-white/90">{s.label}</p>
           </div>
         ))}
       </div>
-      <p className="mt-3 text-center text-xs text-ink/40">*probably</p>
+      <p className="mt-3 text-center text-xs text-ink/40 dark:text-white/60">*probably</p>
     </section>
   );
 }

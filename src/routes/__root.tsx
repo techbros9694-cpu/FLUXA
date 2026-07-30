@@ -15,6 +15,7 @@ import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { CursorGlow } from "@/components/CursorGlow";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Stickers } from "@/components/Stickers";
+import { BackToTop } from "@/components/BackToTop";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -138,6 +139,7 @@ function RootComponent() {
       <FloatingNavbar />
       <Stickers />
       <Outlet />
+      <BackToTop />
       <Toaster position="bottom-right" />
     </QueryClientProvider>
   );

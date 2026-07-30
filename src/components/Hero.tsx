@@ -50,18 +50,18 @@ export function Hero() {
     <section className="relative overflow-hidden pt-32 pb-16">
       <FloatingIcons />
       <div className="relative z-10 mx-auto max-w-5xl px-6 text-center">
-        <span className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-ink/70 shadow-float">
+        <span className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-ink/70 shadow-float dark:bg-surface dark:text-white/90 dark:border-white/10">
           <span className="h-2 w-2 rounded-full bg-lime-bright animate-pulse" />
           Open source · v0.0.chaotic
         </span>
         <h1
           ref={headingRef}
-          className="mt-6 text-5xl font-black leading-[0.95] text-ink sm:text-7xl md:text-8xl"
+          className="mt-6 text-5xl font-black leading-[0.95] text-ink sm:text-7xl md:text-8xl dark:text-white"
         >
           {headline.map((w, i) => (
             <span key={i} data-word className="mr-3 inline-block">
               {w === "Crying." ? (
-                <span className="relative inline-block">
+                <span className="relative inline-block text-neutral-950">
                   <span className="relative z-10">Crying.</span>
                   <span className="absolute inset-x-0 bottom-1 -z-0 h-4 -skew-x-6 bg-lime" />
                 </span>
@@ -71,12 +71,12 @@ export function Hero() {
             </span>
           ))}
         </h1>
-        <p className="mt-6 text-lg font-medium text-ink/70 sm:text-xl">
+        <p className="mt-6 text-lg font-medium text-ink/70 sm:text-xl dark:text-white/80">
           MP4? MOV? AVI? MKV? Yeah… we got you.
         </p>
-        <p className="mt-3 min-h-[1.75rem] text-base text-ink/60 font-mono">
+        <p className="mt-3 min-h-[1.75rem] text-base text-ink/60 font-mono dark:text-white/70">
           {text}
-          <span className="ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-pulse bg-ink" />
+          <span className="ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-pulse bg-ink dark:bg-lime" />
         </p>
       </div>
     </section>

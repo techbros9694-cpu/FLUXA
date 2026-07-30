@@ -10,16 +10,16 @@ import { Footer } from "@/components/Footer";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "VideoMorph 🎬 — Convert Videos Without Crying" },
+      { title: "FLUXA 🎬 — Privacy-First Browser-Based File Tools" },
       {
         name: "description",
         content:
-          "A playful, open-source video format converter. MP4, MOV, AVI, MKV, WEBM — we got you.",
+          "FLUXA is a fast, beautiful, privacy-first, open-source file workspace running directly in your browser.",
       },
-      { property: "og:title", content: "VideoMorph — Convert Videos Without Crying" },
+      { property: "og:title", content: "FLUXA — Privacy-First File Tools" },
       {
         property: "og:description",
-        content: "A playful, open-source video format converter. Fast, free, and slightly chaotic.",
+        content: "Fast, free, privacy-first browser-based file conversion and tools.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

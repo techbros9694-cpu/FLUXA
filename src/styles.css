@@ -102,7 +102,77 @@
 }
 
 .dark {
-  /* No dark mode — VideoMorph is a bright, energetic experience. */
+  --background: oklch(0.13 0.015 260);
+  --foreground: oklch(0.96 0 0);
+  --ink: oklch(0.96 0 0);
+  --surface: oklch(0.18 0.02 260);
+  --surface-2: oklch(0.24 0.02 260);
+  --card: oklch(0.18 0.02 260);
+  --card-foreground: oklch(0.96 0 0);
+  --popover: oklch(0.18 0.02 260);
+  --popover-foreground: oklch(0.96 0 0);
+  --lime: oklch(0.82 0.24 128);
+  --lime-bright: oklch(0.85 0.28 142);
+  --sunny: oklch(0.85 0.19 100);
+  --primary: oklch(0.96 0 0);
+  --primary-foreground: oklch(0.13 0 0);
+  --secondary: oklch(0.24 0.02 260);
+  --secondary-foreground: oklch(0.96 0 0);
+  --muted: oklch(0.24 0.02 260);
+  --muted-foreground: oklch(0.72 0 0);
+  --accent: oklch(0.82 0.24 128);
+  --accent-foreground: oklch(0.13 0 0);
+  --border: oklch(0.28 0.02 260);
+  --input: oklch(0.28 0.02 260);
+  --ring: oklch(0.85 0.28 142);
+  --shadow-float: 0 20px 60px -20px rgba(0, 0, 0, 0.8), 0 4px 12px -6px rgba(0, 0, 0, 0.6);
+}
+
+.dark .bg-white {
+  background-color: oklch(0.18 0.02 260);
+  color: oklch(0.96 0 0);
+}
+
+.dark .bg-ink {
+  background-color: oklch(0.96 0 0);
+  color: oklch(0.13 0 0);
+}
+
+.dark .bg-ink.text-white,
+.dark .bg-ink .text-white {
+  color: oklch(0.13 0 0) !important;
+}
+
+.dark .bg-white\/80 {
+  background-color: oklch(0.18 0.02 260 / 0.85);
+}
+
+.dark .bg-white\/85 {
+  background-color: oklch(0.18 0.02 260 / 0.9);
+}
+
+.dark .border-ink\/5,
+.dark .border-ink\/10 {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.dark .border-black\/5 {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark .text-ink\/30,
+.dark .text-ink\/40 {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.dark .text-ink\/50,
+.dark .text-ink\/60,
+.dark .text-ink\/70,
+.dark .text-ink\/75,
+.dark .text-ink\/80,
+.dark .text-ink\/85,
+.dark .text-ink\/90 {
+  color: rgba(255, 255, 255, 0.88);
 }
 
 @layer base {

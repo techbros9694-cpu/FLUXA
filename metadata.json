@@ -1,6 +1,6 @@
 {
-  "name": "Video Morph",
-  "description": "Video Morph AI Application imported from GitHub",
+  "name": "FLUXA",
+  "description": "FLUXA — Fast, beautiful, privacy-first, browser-based file tools.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
