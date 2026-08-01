@@ -114,16 +114,261 @@ function getUniqueOutputFilename(
   return candidate;
 }
 
+function checkStreamCopyCandidate(
+  inputExt: string,
+  outputFormat: SupportedOutputFormat,
+  metadata: VideoMetadata,
+  advanced?: AdvancedSettings,
+): { isCandidate: boolean; explanation: string } {
+  const isDefaultSettings =
+    (!advanced?.resolution || advanced.resolution === "Same as Original") &&
+    (!advanced?.fps || advanced.fps === "Same as Original") &&
+    (!advanced?.videoCodec || advanced.videoCodec.includes("Auto")) &&
+    (!advanced?.bitrate || advanced.bitrate === "Auto") &&
+    (!advanced?.audioQuality ||
+      advanced.audioQuality === "Auto" ||
+      advanced.audioQuality === "Original") &&
+    (!advanced?.qualityPreset ||
+      advanced.qualityPreset === "Balanced" ||
+      advanced.qualityPreset === "High Quality");
+
+  if (!isDefaultSettings) {
+    return {
+      isCandidate: false,
+      explanation:
+        "Full re-encoding is active because custom encoding settings or quality overrides were requested.",
+    };
+  }
+
+  const inFmt = inputExt.toUpperCase();
+  const outFmt = outputFormat.toUpperCase();
+
+  const vCodec = (metadata.videoCodec || "").toLowerCase();
+  const aCodec = (metadata.audioCodec || "").toLowerCase();
+
+  const isMP4Family = (fmt: string) => ["MP4", "MOV", "M4V"].includes(fmt);
+
+  if (inFmt === outFmt) {
+    return {
+      isCandidate: true,
+      explanation:
+        "Fast 100% loss-less stream copy applied because input and output container formats are identical.",
+    };
+  }
+
+  if (isMP4Family(inFmt) && isMP4Family(outFmt)) {
+    return {
+      isCandidate: true,
+      explanation: "Fast 100% loss-less stream copy applied between MP4 and MOV container formats.",
+    };
+  }
+
+  if (["MP4", "MOV", "M4V"].includes(outFmt)) {
+    const vOk =
+      vCodec.includes("h264") ||
+      vCodec.includes("hevc") ||
+      vCodec.includes("h265") ||
+      vCodec.includes("av1") ||
+      vCodec.includes("mpeg4");
+    const aOk =
+      aCodec.includes("aac") || aCodec.includes("mp3") || aCodec.includes("ac3") || !aCodec;
+    if (vOk && aOk) {
+      return {
+        isCandidate: true,
+        explanation:
+          "Fast 100% loss-less stream copy applied because source video and audio streams are natively compatible with MP4 container.",
+      };
+    }
+  }
+
+  if (outFmt === "MKV") {
+    return {
+      isCandidate: true,
+      explanation:
+        "Fast 100% loss-less stream copy applied because MKV container natively accepts source streams.",
+    };
+  }
+
+  if (outFmt === "WEBM") {
+    const vOk = vCodec.includes("vp9") || vCodec.includes("vp8") || vCodec.includes("av1");
+    const aOk = aCodec.includes("opus") || aCodec.includes("vorbis") || !aCodec;
+    if (vOk && aOk) {
+      return {
+        isCandidate: true,
+        explanation: "Fast 100% loss-less stream copy applied for WebM compatible streams.",
+      };
+    }
+  }
+
+  if (outFmt === "TS") {
+    const vOk =
+      vCodec.includes("h264") ||
+      vCodec.includes("hevc") ||
+      vCodec.includes("h265") ||
+      vCodec.includes("mpeg2");
+    const aOk =
+      aCodec.includes("aac") || aCodec.includes("mp3") || aCodec.includes("ac3") || !aCodec;
+    if (vOk && aOk) {
+      return {
+        isCandidate: true,
+        explanation: "Fast 100% loss-less stream copy applied for MPEG-TS transport container.",
+      };
+    }
+  }
+
+  return {
+    isCandidate: false,
+    explanation:
+      "Full re-encoding is active to transcode streams into target container format safely.",
+  };
+}
+
+function buildFormatFallbackArgs(
+  inputVirtualName: string,
+  outputVirtualName: string,
+  outputFormat: SupportedOutputFormat,
+): string[] {
+  switch (outputFormat) {
+    case "WEBM":
+      return [
+        "-i",
+        inputVirtualName,
+        "-vf",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "-c:v",
+        "libvpx-vp9",
+        "-deadline",
+        "good",
+        "-cpu-used",
+        "2",
+        "-crf",
+        "22",
+        "-b:v",
+        "0",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:a",
+        "libvorbis",
+        "-b:a",
+        "192k",
+        "-y",
+        outputVirtualName,
+      ];
+    case "MP3":
+      return [
+        "-i",
+        inputVirtualName,
+        "-vn",
+        "-c:a",
+        "libmp3lame",
+        "-b:a",
+        "256k",
+        "-y",
+        outputVirtualName,
+      ];
+    case "GIF":
+      return [
+        "-i",
+        inputVirtualName,
+        "-vf",
+        "fps=15,scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos",
+        "-an",
+        "-y",
+        outputVirtualName,
+      ];
+    case "AVI":
+      return [
+        "-i",
+        inputVirtualName,
+        "-c:v",
+        "mpeg4",
+        "-q:v",
+        "3",
+        "-c:a",
+        "mp3",
+        "-b:a",
+        "192k",
+        "-y",
+        outputVirtualName,
+      ];
+    case "WMV":
+      return [
+        "-i",
+        inputVirtualName,
+        "-c:v",
+        "wmv2",
+        "-q:v",
+        "3",
+        "-c:a",
+        "wmav2",
+        "-b:a",
+        "192k",
+        "-y",
+        outputVirtualName,
+      ];
+    default:
+      return [
+        "-i",
+        inputVirtualName,
+        "-vf",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "fast",
+        "-crf",
+        "19",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "192k",
+        "-y",
+        outputVirtualName,
+      ];
+  }
+}
+
 function buildFFmpegArgs(
   inputFilename: string,
   outputFilename: string,
   outputFormat: SupportedOutputFormat,
   advanced?: AdvancedSettings,
-  perfProfile?: DevicePerformanceProfile,
+  _perfProfile?: DevicePerformanceProfile,
 ): string[] {
   const args: string[] = ["-i", inputFilename];
   const preset = advanced?.qualityPreset || "Balanced";
-  const fastPreset = perfProfile?.recommendedPreset || "ultrafast";
+
+  // Codec presets focusing on pristine visual quality over aggressive compression
+  // Balanced is the default: CRF 20 / preset fast preserves crisp details & original quality
+  let h264Preset = "fast";
+  let h264Crf = "19";
+
+  let h265Preset = "fast";
+  let h265Crf = "21";
+
+  let vp9Deadline = "good";
+  let vp9CpuUsed = "2";
+  let vp9Crf = "22";
+
+  if (preset === "High Quality") {
+    h264Preset = "medium";
+    h264Crf = "17";
+    h265Preset = "medium";
+    h265Crf = "19";
+    vp9Deadline = "good";
+    vp9CpuUsed = "1";
+    vp9Crf = "18";
+  } else if (preset === "Small Size") {
+    h264Preset = "faster";
+    h264Crf = "24";
+    h265Preset = "faster";
+    h265Crf = "26";
+    vp9Deadline = "realtime";
+    vp9CpuUsed = "4";
+    vp9Crf = "30";
+  }
 
   // 1. Audio-only (MP3)
   if (outputFormat === "MP3") {
@@ -131,13 +376,13 @@ function buildFFmpegArgs(
     if (advanced?.audioQuality === "Mute Audio") {
       args.push("-an");
     } else {
-      let audioBitrate = "128k";
+      let audioBitrate = "256k"; // Default Balanced MP3 bitrate
       if (advanced?.audioQuality?.includes("kbps")) {
         audioBitrate = advanced.audioQuality.replace(" ", "");
       } else if (preset === "High Quality") {
-        audioBitrate = "192k";
+        audioBitrate = "320k";
       } else if (preset === "Small Size") {
-        audioBitrate = "96k";
+        audioBitrate = "160k";
       }
       args.push("-c:a", "libmp3lame", "-b:a", audioBitrate);
     }
@@ -147,24 +392,26 @@ function buildFFmpegArgs(
 
   // 2. GIF format
   if (outputFormat === "GIF") {
-    let fps = 12;
+    let fps = 15;
     if (advanced?.fps && advanced.fps !== "Same as Original") {
       const parsed = parseInt(advanced.fps);
       if (!isNaN(parsed)) fps = parsed;
     } else if (preset === "Small Size") {
       fps = 10;
     } else if (preset === "High Quality") {
-      fps = 15;
+      fps = 24;
     }
 
-    let scaleFilter = "scale=480:-1:flags=fast_bilinear";
+    let scaleFilter = "scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos";
     if (advanced?.resolution && advanced.resolution !== "Same as Original") {
-      if (advanced.resolution.includes("720p")) {
-        scaleFilter = "scale=1280:-1:flags=fast_bilinear";
+      if (advanced.resolution.includes("1080p")) {
+        scaleFilter = "scale=1920:-1:flags=lanczos";
+      } else if (advanced.resolution.includes("720p")) {
+        scaleFilter = "scale=1280:-1:flags=lanczos";
       } else if (advanced.resolution.includes("480p")) {
-        scaleFilter = "scale=854:-1:flags=fast_bilinear";
+        scaleFilter = "scale=854:-1:flags=lanczos";
       } else if (advanced.resolution.includes("360p")) {
-        scaleFilter = "scale=640:-1:flags=fast_bilinear";
+        scaleFilter = "scale=640:-1:flags=lanczos";
       }
     }
 
@@ -183,6 +430,7 @@ function buildFFmpegArgs(
     else if (advanced.resolution.includes("480p")) videoFilters.push("scale=854:-2");
     else if (advanced.resolution.includes("360p")) videoFilters.push("scale=640:-2");
   } else {
+    // Keep exact original resolution while guaranteeing even dimensions for H.264 / HEVC yuv420p
     videoFilters.push("scale=trunc(iw/2)*2:trunc(ih/2)*2");
   }
 
@@ -190,7 +438,7 @@ function buildFFmpegArgs(
     args.push("-vf", videoFilters.join(","));
   }
 
-  // 4. Frame rate
+  // 4. Frame rate (Preserve original unless user explicitly requests override)
   if (advanced?.fps && advanced.fps !== "Same as Original") {
     const fpsVal = parseInt(advanced.fps);
     if (!isNaN(fpsVal)) {
@@ -198,17 +446,9 @@ function buildFFmpegArgs(
     }
   }
 
-  // 5. Codec & CRF / Bitrate Configuration
+  // 5. Codec & Quality Configuration
   const userCodec = advanced?.videoCodec || "Auto (Recommended)";
   const customBitrate = advanced?.bitrate && advanced.bitrate !== "Auto";
-
-  let h264Crf = "24";
-  if (preset === "High Quality") h264Crf = "20";
-  else if (preset === "Small Size") h264Crf = "28";
-
-  let vp9Crf = "32";
-  if (preset === "High Quality") vp9Crf = "24";
-  else if (preset === "Small Size") vp9Crf = "40";
 
   switch (outputFormat) {
     case "MP4":
@@ -217,14 +457,23 @@ function buildFFmpegArgs(
     case "MKV":
     case "TS": {
       if (userCodec.includes("H.265") || userCodec.includes("HEVC")) {
-        args.push("-c:v", "libx265", "-preset", fastPreset);
-        if (!customBitrate) args.push("-crf", (parseInt(h264Crf) + 2).toString());
+        args.push("-c:v", "libx265", "-preset", h265Preset);
+        if (!customBitrate) args.push("-crf", h265Crf);
       } else if (userCodec.includes("VP9")) {
-        args.push("-c:v", "libvpx-vp9", "-deadline", "realtime", "-cpu-used", "8", "-b:v", "0");
+        args.push(
+          "-c:v",
+          "libvpx-vp9",
+          "-deadline",
+          vp9Deadline,
+          "-cpu-used",
+          vp9CpuUsed,
+          "-b:v",
+          "0",
+        );
         if (!customBitrate) args.push("-crf", vp9Crf);
       } else {
-        // Fast H.264 default
-        args.push("-c:v", "libx264", "-preset", fastPreset, "-pix_fmt", "yuv420p");
+        // High fidelity H.264 default
+        args.push("-c:v", "libx264", "-preset", h264Preset, "-pix_fmt", "yuv420p");
         if (!customBitrate) args.push("-crf", h264Crf);
       }
 
@@ -242,13 +491,19 @@ function buildFFmpegArgs(
         "-c:v",
         "libvpx-vp9",
         "-deadline",
-        "realtime",
+        vp9Deadline,
         "-cpu-used",
-        "8",
+        vp9CpuUsed,
         "-b:v",
         "0",
+        "-pix_fmt",
+        "yuv420p",
+        "-tile-columns",
+        "2",
+        "-row-mt",
+        "1",
         "-c:a",
-        "libvorbis",
+        "libopus",
       );
       if (!customBitrate) args.push("-crf", vp9Crf);
       break;
@@ -259,7 +514,7 @@ function buildFFmpegArgs(
         "-c:v",
         "mpeg4",
         "-q:v",
-        preset === "High Quality" ? "4" : preset === "Small Size" ? "12" : "7",
+        preset === "High Quality" ? "3" : preset === "Small Size" ? "8" : "5",
         "-c:a",
         "mp3",
       );
@@ -270,7 +525,7 @@ function buildFFmpegArgs(
         "-c:v",
         "wmv2",
         "-q:v",
-        preset === "High Quality" ? "4" : preset === "Small Size" ? "12" : "7",
+        preset === "High Quality" ? "3" : preset === "Small Size" ? "8" : "5",
         "-c:a",
         "wmav2",
       );
@@ -281,7 +536,7 @@ function buildFFmpegArgs(
         "-c:v",
         "flv1",
         "-q:v",
-        preset === "High Quality" ? "4" : preset === "Small Size" ? "12" : "7",
+        preset === "High Quality" ? "3" : preset === "Small Size" ? "8" : "5",
         "-c:a",
         "mp3",
       );
@@ -292,7 +547,7 @@ function buildFFmpegArgs(
         "-c:v",
         "mpeg2video",
         "-q:v",
-        preset === "High Quality" ? "4" : preset === "Small Size" ? "12" : "8",
+        preset === "High Quality" ? "3" : preset === "Small Size" ? "8" : "5",
         "-c:a",
         "mp2",
       );
@@ -303,7 +558,7 @@ function buildFFmpegArgs(
         "-c:v",
         "libtheora",
         "-q:v",
-        preset === "High Quality" ? "7" : preset === "Small Size" ? "3" : "5",
+        preset === "High Quality" ? "8" : preset === "Small Size" ? "4" : "6",
         "-c:a",
         "libvorbis",
       );
@@ -327,7 +582,7 @@ function buildFFmpegArgs(
       break;
 
     default:
-      args.push("-c:v", "libx264", "-preset", fastPreset, "-crf", h264Crf);
+      args.push("-c:v", "libx264", "-preset", h264Preset, "-crf", h264Crf);
       break;
   }
 
@@ -336,7 +591,7 @@ function buildFFmpegArgs(
     args.push("-b:v", bitVal);
   }
 
-  // Audio settings
+  // Audio settings (Preserve high audio fidelity)
   if (outputFormat !== "3GP") {
     if (advanced?.audioQuality === "Mute Audio") {
       args.push("-an");
@@ -347,9 +602,9 @@ function buildFFmpegArgs(
       if (advanced?.audioQuality?.includes("kbps")) {
         args.push("-b:a", advanced.audioQuality.replace(" ", ""));
       } else {
-        let aBit = "128k";
-        if (preset === "High Quality") aBit = "192k";
-        else if (preset === "Small Size") aBit = "96k";
+        let aBit = "192k"; // Default Balanced audio bitrate
+        if (preset === "High Quality") aBit = "256k";
+        else if (preset === "Small Size") aBit = "128k";
         args.push("-b:a", aBit);
       }
     }
@@ -419,26 +674,14 @@ self.onmessage = async (event: MessageEvent) => {
     let lastPct = -1;
     const threadsCount = typeof navigator !== "undefined" ? navigator.hardwareConcurrency || 4 : 4;
 
-    const streamCopyContainers = ["MP4", "MOV", "MKV", "M4V", "TS"];
-    const isDefaultSettings =
-      (!advanced?.resolution || advanced.resolution === "Same as Original") &&
-      (!advanced?.fps || advanced.fps === "Same as Original") &&
-      (!advanced?.videoCodec || advanced.videoCodec.includes("Auto")) &&
-      (!advanced?.bitrate || advanced.bitrate === "Auto") &&
-      (!advanced?.audioQuality || advanced.audioQuality === "Auto");
+    const streamCopyAnalysis = checkStreamCopyCandidate(inputExt, outputFormat, metadata, advanced);
+    const isStreamCopyCandidate = streamCopyAnalysis.isCandidate;
 
-    const isStreamCopyCandidate =
-      isDefaultSettings &&
-      streamCopyContainers.includes(inputExt.toUpperCase()) &&
-      streamCopyContainers.includes(outputFormat);
-
-    const conversionType: "Stream Copy" | "Full Re-Encode" = isStreamCopyCandidate
+    let conversionType: "Stream Copy" | "Full Re-Encode" = isStreamCopyCandidate
       ? "Stream Copy"
       : "Full Re-Encode";
 
-    const explanation: string = isStreamCopyCandidate
-      ? "Fast conversion because the video and audio codecs are already compatible."
-      : "Full re-encoding is required because the selected output format or settings require transcoding.";
+    let explanation: string = streamCopyAnalysis.explanation;
 
     const progressHandler = ({ progress, time }: { progress: number; time: number }) => {
       let pct = Math.round(progress * 100);
@@ -581,6 +824,10 @@ self.onmessage = async (event: MessageEvent) => {
 
       if (!converted) {
         isRemuxing = false;
+        conversionType = "Full Re-Encode";
+        explanation =
+          "Full re-encoding is active because container stream copy was bypassed or required codec transcoding.";
+
         try {
           await ffmpeg.deleteFile(outputVirtualName);
         } catch {
@@ -605,22 +852,11 @@ self.onmessage = async (event: MessageEvent) => {
             // ignore
           }
 
-          const fallbackArgs = [
-            "-i",
+          const fallbackArgs = buildFormatFallbackArgs(
             inputVirtualName,
-            "-vf",
-            "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "ultrafast",
-            "-pix_fmt",
-            "yuv420p",
-            "-c:a",
-            "aac",
-            "-y",
             outputVirtualName,
-          ];
+            outputFormat,
+          );
           exitCode = await ffmpeg.exec(fallbackArgs);
         }
 
@@ -643,6 +879,9 @@ self.onmessage = async (event: MessageEvent) => {
       });
 
       const outputData = (await ffmpeg.readFile(outputVirtualName)) as Uint8Array;
+      if (!outputData || outputData.byteLength < 512) {
+        throw new Error("Conversion produced an invalid or empty file (0 bytes).");
+      }
       const buffer = outputData.buffer;
 
       self.postMessage({

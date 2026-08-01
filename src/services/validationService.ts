@@ -83,4 +83,80 @@ export class ValidationService {
 
     return { supported: true };
   }
+
+  /**
+   * Validate converted output buffer
+   */
+  static validateConvertedOutput(
+    outputData: Uint8Array,
+    targetFormat: string,
+    inputSizeBytes?: number,
+  ): { isValid: boolean; error?: string } {
+    if (!outputData || outputData.length < 512) {
+      return {
+        isValid: false,
+        error: "Output file size is invalid (under 512 bytes).",
+      };
+    }
+
+    const fmt = targetFormat.toUpperCase();
+
+    // Check for suspiciously small output files (e.g., 228 KB output for a 36 MB input)
+    if (inputSizeBytes && inputSizeBytes > 2 * 1024 * 1024 && fmt !== "MP3" && fmt !== "GIF") {
+      if (outputData.length < 50 * 1024) {
+        return {
+          isValid: false,
+          error: `Conversion produced a suspiciously small output (${(
+            outputData.length / 1024
+          ).toFixed(1)} KB) for a ${(inputSizeBytes / (1024 * 1024)).toFixed(
+            1,
+          )} MB input file. Quality verification failed.`,
+        };
+      }
+    }
+
+    // MP4 / MOV / M4V container header check
+    if (fmt === "MP4" || fmt === "MOV" || fmt === "M4V") {
+      const headerStr = String.fromCharCode.apply(null, Array.from(outputData.subarray(0, 100)));
+      if (
+        !headerStr.includes("ftyp") &&
+        !headerStr.includes("moov") &&
+        !headerStr.includes("mdat") &&
+        !headerStr.includes("wide")
+      ) {
+        return {
+          isValid: false,
+          error: "Output file lacks valid MP4/MOV container header signatures.",
+        };
+      }
+    }
+
+    // WEBM / MKV EBML signature check
+    if (fmt === "WEBM" || fmt === "MKV") {
+      const isEBML =
+        outputData[0] === 0x1a &&
+        outputData[1] === 0x45 &&
+        outputData[2] === 0xdf &&
+        outputData[3] === 0xa3;
+      if (!isEBML) {
+        return {
+          isValid: false,
+          error: "Output file lacks valid WebM/MKV container signature.",
+        };
+      }
+    }
+
+    // GIF header check
+    if (fmt === "GIF") {
+      const headerStr = String.fromCharCode.apply(null, Array.from(outputData.subarray(0, 6)));
+      if (!headerStr.startsWith("GIF8")) {
+        return {
+          isValid: false,
+          error: "Output file lacks valid GIF header signature.",
+        };
+      }
+    }
+
+    return { isValid: true };
+  }
 }

@@ -7,6 +7,7 @@ import {
 import { formatBytes } from "./metadataService";
 import { FFmpegService, WorkerProgressPayload } from "./ffmpegService";
 import { FallbackService } from "./fallbackService";
+import { ValidationService } from "./validationService";
 
 export interface ConversionArgsOptions {
   inputFilename: string;
@@ -150,8 +151,18 @@ export class ConversionService {
         existingList,
       );
 
+      const outputBytes = new Uint8Array(result.outputBuffer);
+      const val = ValidationService.validateConvertedOutput(
+        outputBytes,
+        targetFormat,
+        inputFile.size,
+      );
+      if (!val.isValid) {
+        throw new Error(val.error || "Generated output failed quality verification.");
+      }
+
       return {
-        outputData: new Uint8Array(result.outputBuffer),
+        outputData: outputBytes,
         outputFilename: result.outputFilename,
       };
     } catch (err) {

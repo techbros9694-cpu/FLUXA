@@ -150,7 +150,11 @@ export class FallbackService {
             mimeType = "video/webm";
           }
 
-          const recorder = new MediaRecorder(stream, { mimeType });
+          const recorder = new MediaRecorder(stream, {
+            mimeType,
+            videoBitsPerSecond: 8000000,
+            audioBitsPerSecond: 256000,
+          });
           const chunks: Blob[] = [];
 
           recorder.ondataavailable = (e) => {
