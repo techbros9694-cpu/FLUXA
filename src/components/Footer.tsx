@@ -1,4 +1,5 @@
 import { Github, Heart, Coffee } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { ShinyText } from "./ShinyText";
 
 export function Footer() {
@@ -28,6 +29,14 @@ export function Footer() {
             </h4>
             <ul className="mt-3 space-y-2 text-sm text-ink/60 dark:text-white/70">
               <li>
+                <Link
+                  className="hover:text-ink dark:hover:text-white transition-colors"
+                  to="/about"
+                >
+                  About Us
+                </Link>
+              </li>
+              <li>
                 <a
                   className="hover:text-ink dark:hover:text-white transition-colors"
                   href="https://github.com/ai-playground-arc-1"
@@ -55,19 +64,28 @@ export function Footer() {
             </h4>
             <ul className="mt-3 space-y-2 text-sm text-ink/60 dark:text-white/70">
               <li>
-                <a className="hover:text-ink dark:hover:text-white transition-colors" href="#">
+                <Link
+                  className="hover:text-ink dark:hover:text-white transition-colors"
+                  to="/license"
+                >
                   License (MIT)
-                </a>
+                </Link>
               </li>
               <li>
-                <a className="hover:text-ink dark:hover:text-white transition-colors" href="#">
+                <Link
+                  className="hover:text-ink dark:hover:text-white transition-colors"
+                  to="/privacy"
+                >
                   Privacy
-                </a>
+                </Link>
               </li>
               <li>
-                <a className="hover:text-ink dark:hover:text-white transition-colors" href="#">
+                <Link
+                  className="hover:text-ink dark:hover:text-white transition-colors"
+                  to="/changelog"
+                >
                   Changelog
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

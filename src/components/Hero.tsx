@@ -19,14 +19,19 @@ export function Hero() {
   useEffect(() => {
     if (!headingRef.current) return;
     const words = headingRef.current.querySelectorAll("[data-word]");
-    gsap.from(words, {
-      y: 60,
-      opacity: 0,
-      rotate: -6,
-      stagger: 0.08,
-      duration: 0.9,
-      ease: "back.out(1.6)",
-    });
+    gsap.fromTo(
+      words,
+      { y: 60, opacity: 0, rotate: -6 },
+      {
+        y: 0,
+        opacity: 1,
+        rotate: 0,
+        stagger: 0.08,
+        duration: 0.9,
+        ease: "back.out(1.6)",
+        clearProps: "all",
+      },
+    );
   }, []);
 
   useEffect(() => {
@@ -62,14 +67,13 @@ export function Hero() {
         </span>
         <h1
           ref={headingRef}
-          className="mt-6 text-5xl font-black leading-[0.95] text-ink sm:text-7xl md:text-8xl dark:text-white"
+          className="mt-6 text-4xl font-black leading-[1.05] text-ink sm:text-7xl md:text-8xl dark:text-white tracking-tight"
         >
           {headline.map((w, i) => (
-            <span key={i} data-word className="mr-3 inline-block">
+            <span key={i} data-word className="mr-2 sm:mr-4 inline-block my-1">
               {w === "Crying." ? (
-                <span className="relative inline-block text-neutral-950">
-                  <span className="relative z-10">Crying.</span>
-                  <span className="absolute inset-x-0 bottom-1 -z-0 h-4 -skew-x-6 bg-lime" />
+                <span className="relative inline-block rounded-2xl sm:rounded-3xl bg-lime px-3 sm:px-5 py-0.5 sm:py-1 text-neutral-950 shadow-lg dark:bg-lime dark:text-neutral-950 border border-lime-bright">
+                  Crying.
                 </span>
               ) : (
                 w

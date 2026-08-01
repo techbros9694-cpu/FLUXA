@@ -15,7 +15,7 @@ const FAQS = [
 
 export function FaqAccordion() {
   return (
-    <section className="relative z-10 mx-auto max-w-3xl px-6 py-20">
+    <section id="faq" className="relative z-10 mx-auto max-w-3xl px-6 py-20">
       <h2 className="text-center text-4xl font-black text-ink sm:text-5xl dark:text-white">
         <ShinyText text="FAQ, kinda" color="currentColor" shineColor="#a3e635" speed={2.5} />
       </h2>
