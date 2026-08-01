@@ -6,6 +6,7 @@ import {
 } from "@/types/converter";
 import { formatBytes } from "./metadataService";
 import { FFmpegService, WorkerProgressPayload } from "./ffmpegService";
+import { FallbackService } from "./fallbackService";
 
 export interface ConversionArgsOptions {
   inputFilename: string;
@@ -138,19 +139,31 @@ export class ConversionService {
   ): Promise<{ outputData: Uint8Array; outputFilename: string }> {
     const existingList = Array.from(existingFilenames || []);
 
-    const result = await FFmpegService.convertVideoInWorker(
-      id,
-      inputFile,
-      metadata,
-      targetFormat,
-      advanced,
-      onProgress,
-      existingList,
-    );
+    try {
+      const result = await FFmpegService.convertVideoInWorker(
+        id,
+        inputFile,
+        metadata,
+        targetFormat,
+        advanced,
+        onProgress,
+        existingList,
+      );
 
-    return {
-      outputData: new Uint8Array(result.outputBuffer),
-      outputFilename: result.outputFilename,
-    };
+      return {
+        outputData: new Uint8Array(result.outputBuffer),
+        outputFilename: result.outputFilename,
+      };
+    } catch (err) {
+      console.warn("FFmpeg WASM error, switching to FallbackService transcoder:", err);
+      return await FallbackService.convert(
+        inputFile,
+        metadata,
+        targetFormat,
+        advanced,
+        onProgress,
+        existingList,
+      );
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   WorkflowStep,
   SupportedOutputFormat,
@@ -38,6 +38,26 @@ export const DEFAULT_ADVANCED_SETTINGS: AdvancedSettings = {
   audioQuality: "Original",
 };
 
+export function formatDuration(seconds: number): string {
+  if (isNaN(seconds) || seconds <= 0) return "0s";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+export function formatTimeClock(seconds: number): string {
+  if (isNaN(seconds) || seconds < 0) return "00:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  const mStr = m < 10 ? `0${m}` : `${m}`;
+  const sStr = s < 10 ? `0${s}` : `${s}`;
+  return `${mStr}:${sStr}`;
+}
+
 export function useConverter() {
   const [step, setStep] = useState<WorkflowStep>("upload");
   const [queue, setQueue] = useState<BatchItem[]>([]);
@@ -47,11 +67,13 @@ export function useConverter() {
 
   const [engineLoading, setEngineLoading] = useState(false);
   const [engineStatus, setEngineStatus] = useState("");
+  const [batchElapsedTime, setBatchElapsedTime] = useState(0);
 
   const [progress, setProgress] = useState<RealProgressState>({
     percentage: 0,
     timeSeconds: 0,
     etaSeconds: 0,
+    stage: "Loading FFmpeg",
     funnyMessage: FUNNY_LOADING_MESSAGES[0],
     statusText: "Initializing worker engine...",
   });
@@ -65,6 +87,21 @@ export function useConverter() {
   useEffect(() => {
     FFmpegService.preload();
   }, []);
+
+  // Track elapsed timer for converting batch
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (step === "converting") {
+      interval = setInterval(() => {
+        setBatchElapsedTime((prev) => prev + 1);
+      }, 1000);
+    } else if (step === "upload" || step === "configured") {
+      setBatchElapsedTime(0);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [step]);
 
   // Rotate funny messages during conversion
   useEffect(() => {
@@ -317,7 +354,7 @@ export function useConverter() {
 
         setQueue((prev) =>
           prev.map((item, idx) =>
-            idx === i ? { ...item, status: "converting", progress: 0 } : item,
+            idx === i ? { ...item, status: "converting", progress: 0, error: null } : item,
           ),
         );
 
@@ -360,11 +397,34 @@ export function useConverter() {
             currentItem.advancedSettings,
             (payload) => {
               setQueue((prev) =>
-                prev.map((item, idx) => (idx === i ? { ...item, progress: payload.pct } : item)),
+                prev.map((item, idx) =>
+                  idx === i
+                    ? {
+                        ...item,
+                        progress: payload.pct,
+                        stage: payload.stage,
+                        elapsedSeconds: payload.elapsedSec,
+                        etaSeconds: payload.remainingSec,
+                        speed: payload.speed,
+                        fps: payload.fps,
+                        throughputMBs: payload.throughputMBs,
+                        threads: payload.threads,
+                        conversionType: payload.conversionType,
+                        explanation: payload.explanation,
+                      }
+                    : item,
+                ),
               );
               setProgress({
                 percentage: payload.pct,
                 timeSeconds: payload.timeSec,
+                speed: payload.speed,
+                fps: payload.fps,
+                throughputMBs: payload.throughputMBs,
+                threads: payload.threads,
+                stage: payload.stage,
+                conversionType: payload.conversionType,
+                explanation: payload.explanation,
                 etaSeconds: payload.remainingSec,
                 funnyMessage: FUNNY_LOADING_MESSAGES[0],
                 statusText: `${payload.stage} (${payload.pct}%)`,
@@ -385,9 +445,12 @@ export function useConverter() {
             filename: outputFilename,
             outputFormat: currentItem.outputFormat,
             originalSizeFormatted: meta.sizeFormatted,
+            originalSizeBytes: meta.fileSize || currentItem.file.size,
             outputSizeFormatted,
             outputSizeBytes: outputData.byteLength,
             durationSeconds: meta.duration,
+            conversionType: currentItem.conversionType || "Full Re-Encode",
+            explanation: currentItem.explanation,
           };
 
           setQueue((prev) =>
@@ -397,6 +460,7 @@ export function useConverter() {
                     ...item,
                     status: "completed",
                     progress: 100,
+                    stage: "Finished",
                     result: conversionRes,
                   }
                 : item,
@@ -414,6 +478,7 @@ export function useConverter() {
                     ...item,
                     status: "failed",
                     progress: 0,
+                    stage: "Failed",
                     error: errMsg,
                   }
                 : item,
@@ -436,6 +501,37 @@ export function useConverter() {
       setStep("done");
     }
   }, [queue]);
+
+  /**
+   * Retry failed items in queue
+   */
+  const retryFailedItems = useCallback(() => {
+    setQueue((prev) =>
+      prev.map((item) =>
+        item.status === "failed" ? { ...item, status: "waiting", progress: 0, error: null } : item,
+      ),
+    );
+    setTimeout(() => {
+      startConversion();
+    }, 50);
+  }, [startConversion]);
+
+  /**
+   * Retry single item
+   */
+  const retryItem = useCallback(
+    (id: string) => {
+      setQueue((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, status: "waiting", progress: 0, error: null } : item,
+        ),
+      );
+      setTimeout(() => {
+        startConversion();
+      }, 50);
+    },
+    [startConversion],
+  );
 
   /**
    * Cancel ongoing conversion batch
@@ -505,7 +601,58 @@ export function useConverter() {
     setAdvancedState(DEFAULT_ADVANCED_SETTINGS);
     setShowAdvanced(false);
     setError(null);
+    setBatchElapsedTime(0);
   }, [queue]);
+
+  const overallProgress = useMemo(() => {
+    if (queue.length === 0) return 0;
+    const total = queue.reduce((acc, item) => {
+      if (item.status === "completed") return acc + 100;
+      if (item.status === "failed") return acc + 100;
+      return acc + (item.progress || 0);
+    }, 0);
+    return Math.min(100, Math.round(total / queue.length));
+  }, [queue]);
+
+  const batchSummaryStats = useMemo(() => {
+    const totalFiles = queue.length;
+    const completedItems = queue.filter((i) => i.status === "completed" && i.result);
+    const failedItems = queue.filter((i) => i.status === "failed");
+    const convertedFiles = completedItems.length;
+    const failedFiles = failedItems.length;
+
+    const totalOriginalSizeBytes = queue.reduce(
+      (acc, item) => acc + (item.metadata?.fileSize || item.file.size),
+      0,
+    );
+    const totalOutputSizeBytes = completedItems.reduce(
+      (acc, item) => acc + (item.result?.outputSizeBytes || 0),
+      0,
+    );
+
+    const savedSizeBytes = Math.max(0, totalOriginalSizeBytes - totalOutputSizeBytes);
+    const compressionRatioPercent =
+      totalOriginalSizeBytes > 0
+        ? Math.round(
+            ((totalOriginalSizeBytes - totalOutputSizeBytes) / totalOriginalSizeBytes) * 100,
+          )
+        : 0;
+
+    return {
+      totalFiles,
+      convertedFiles,
+      failedFiles,
+      totalOriginalSizeBytes,
+      totalOutputSizeBytes,
+      totalOriginalSizeFormatted: formatBytes(totalOriginalSizeBytes),
+      totalOutputSizeFormatted: formatBytes(totalOutputSizeBytes),
+      savedSizeBytes,
+      savedSizeFormatted: formatBytes(savedSizeBytes),
+      compressionRatioPercent,
+      totalBatchTimeSeconds: batchElapsedTime,
+      totalBatchTimeFormatted: formatDuration(batchElapsedTime),
+    };
+  }, [queue, batchElapsedTime]);
 
   return {
     step,
@@ -519,6 +666,9 @@ export function useConverter() {
     setShowAdvanced,
     engineLoading,
     engineStatus,
+    batchElapsedTime,
+    overallProgress,
+    batchSummaryStats,
     progress,
     error,
     handleFileUpload,
@@ -526,6 +676,8 @@ export function useConverter() {
     removeItem,
     clearQueue,
     startConversion,
+    retryFailedItems,
+    retryItem,
     cancelConversion,
     downloadItem,
     downloadAllAsZip,

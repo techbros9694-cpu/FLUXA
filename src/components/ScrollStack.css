@@ -6,10 +6,8 @@
   overflow-x: visible;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  will-change: scroll-position;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
 }
 
 .scroll-stack-scroller--window {
@@ -18,7 +16,7 @@
 }
 
 .scroll-stack-inner {
-  padding: 5vh 0 15vh;
+  padding: 2vh 0 10vh;
   min-height: 100vh;
 }
 
@@ -28,18 +26,18 @@
 
 .scroll-stack-card {
   transform-origin: top center;
-  will-change: transform, filter;
+  will-change: transform;
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   transform-style: preserve-3d;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   width: 100%;
-  margin: 20px 0;
-  padding: 2.5rem;
-  border-radius: 32px;
+  margin: 16px 0;
+  padding: 2rem;
+  border-radius: 28px;
   box-sizing: border-box;
-  /* Improve mobile performance */
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
   position: relative;
 }
 

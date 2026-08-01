@@ -46,17 +46,28 @@ async function loadFFmpeg(): Promise<FFmpeg> {
         self.postMessage({ type: "FFMPEG_LOG", message });
       });
 
-      const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+      const primaryURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+      const fallbackURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm";
 
       self.postMessage({
         type: "INIT_PROGRESS",
         message: "Loading cached WASM core...",
       });
 
-      const [coreURL, wasmURL] = await Promise.all([
-        getCachedUrl(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-        getCachedUrl(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-      ]);
+      let coreURL = "";
+      let wasmURL = "";
+
+      try {
+        [coreURL, wasmURL] = await Promise.all([
+          getCachedUrl(`${primaryURL}/ffmpeg-core.js`, "text/javascript"),
+          getCachedUrl(`${primaryURL}/ffmpeg-core.wasm`, "application/wasm"),
+        ]);
+      } catch {
+        [coreURL, wasmURL] = await Promise.all([
+          getCachedUrl(`${fallbackURL}/ffmpeg-core.js`, "text/javascript"),
+          getCachedUrl(`${fallbackURL}/ffmpeg-core.wasm`, "application/wasm"),
+        ]);
+      }
 
       self.postMessage({
         type: "INIT_PROGRESS",
@@ -171,6 +182,8 @@ function buildFFmpegArgs(
     else if (advanced.resolution.includes("720p")) videoFilters.push("scale=1280:-2");
     else if (advanced.resolution.includes("480p")) videoFilters.push("scale=854:-2");
     else if (advanced.resolution.includes("360p")) videoFilters.push("scale=640:-2");
+  } else {
+    videoFilters.push("scale=trunc(iw/2)*2:trunc(ih/2)*2");
   }
 
   if (videoFilters.length > 0) {
@@ -404,6 +417,28 @@ self.onmessage = async (event: MessageEvent) => {
     let isRemuxing = false;
     let lastProgressTime = 0;
     let lastPct = -1;
+    const threadsCount = typeof navigator !== "undefined" ? navigator.hardwareConcurrency || 4 : 4;
+
+    const streamCopyContainers = ["MP4", "MOV", "MKV", "M4V", "TS"];
+    const isDefaultSettings =
+      (!advanced?.resolution || advanced.resolution === "Same as Original") &&
+      (!advanced?.fps || advanced.fps === "Same as Original") &&
+      (!advanced?.videoCodec || advanced.videoCodec.includes("Auto")) &&
+      (!advanced?.bitrate || advanced.bitrate === "Auto") &&
+      (!advanced?.audioQuality || advanced.audioQuality === "Auto");
+
+    const isStreamCopyCandidate =
+      isDefaultSettings &&
+      streamCopyContainers.includes(inputExt.toUpperCase()) &&
+      streamCopyContainers.includes(outputFormat);
+
+    const conversionType: "Stream Copy" | "Full Re-Encode" = isStreamCopyCandidate
+      ? "Stream Copy"
+      : "Full Re-Encode";
+
+    const explanation: string = isStreamCopyCandidate
+      ? "Fast conversion because the video and audio codecs are already compatible."
+      : "Full re-encoding is required because the selected output format or settings require transcoding.";
 
     const progressHandler = ({ progress, time }: { progress: number; time: number }) => {
       let pct = Math.round(progress * 100);
@@ -420,19 +455,36 @@ self.onmessage = async (event: MessageEvent) => {
         lastPct = pct;
 
         const elapsedSec = (now - startTime) / 1000;
+        const timeSec = time ? time / 1000000 : 0;
         const remainingSec =
-          pct > 0 && pct < 100 ? Math.round(((100 - pct) / pct) * elapsedSec) : 0;
+          pct > 0 && pct < 100 ? Math.max(1, Math.round(((100 - pct) / pct) * elapsedSec)) : 0;
 
-        let stage = "Processing video...";
+        let stage = "Converting Video";
         if (pct < 5) {
-          stage = "Preparing virtual filesystem...";
+          stage = "Reading Metadata";
+        } else if (pct < 15) {
+          stage = "Preparing Conversion";
         } else if (isRemuxing) {
-          stage = "Fast remuxing (no quality loss)...";
-        } else if (pct >= 98) {
-          stage = "Finalizing output container...";
+          stage = "Optimizing Streams";
+        } else if (pct >= 15 && pct < 82) {
+          stage = "Converting Video";
+        } else if (pct >= 82 && pct < 95) {
+          stage = "Processing Audio";
         } else {
-          stage = `Encoding (${advanced?.qualityPreset || "Balanced"} preset)...`;
+          stage = "Writing Output File";
         }
+
+        const speedRatioNum = elapsedSec > 0.3 && timeSec > 0 ? timeSec / elapsedSec : 0;
+        const speedStr = speedRatioNum > 0 ? `${speedRatioNum.toFixed(1)}x` : undefined;
+
+        const baseFps = metadata.fps ? parseFloat(metadata.fps) : 30;
+        const liveFps = speedRatioNum > 0 ? Math.round(baseFps * speedRatioNum) : undefined;
+
+        const processedBytes = (inputBuffer.byteLength * pct) / 100;
+        const throughput =
+          elapsedSec > 0.3
+            ? Math.round((processedBytes / (1024 * 1024) / elapsedSec) * 10) / 10
+            : undefined;
 
         self.postMessage({
           type: "PROGRESS",
@@ -440,8 +492,14 @@ self.onmessage = async (event: MessageEvent) => {
           pct,
           elapsedSec,
           remainingSec,
-          timeSec: time ? time / 1000000 : 0,
+          timeSec,
           stage,
+          fps: liveFps,
+          speed: speedStr,
+          throughputMBs: throughput,
+          conversionType,
+          explanation,
+          threads: threadsCount,
         });
       }
     };
@@ -454,28 +512,45 @@ self.onmessage = async (event: MessageEvent) => {
         elapsedSec: 0,
         remainingSec: 0,
         timeSec: 0,
-        stage: "Writing input file to worker RAM...",
+        stage: "Reading Metadata",
+        conversionType,
+        explanation,
+        threads: threadsCount,
       });
 
       await ffmpeg.writeFile(inputVirtualName, new Uint8Array(inputBuffer));
       ffmpeg.on("progress", progressHandler);
 
-      let converted = false;
-      const isDefaultSettings =
-        (!advanced?.resolution || advanced.resolution === "Same as Original") &&
-        (!advanced?.fps || advanced.fps === "Same as Original") &&
-        (!advanced?.videoCodec || advanced.videoCodec.includes("Auto")) &&
-        (!advanced?.bitrate || advanced.bitrate === "Auto") &&
-        (!advanced?.audioQuality || advanced.audioQuality === "Auto");
+      self.postMessage({
+        type: "PROGRESS",
+        id,
+        pct: 5,
+        elapsedSec: (performance.now() - startTime) / 1000,
+        remainingSec: 0,
+        timeSec: 0,
+        stage: "Preparing Conversion",
+        conversionType,
+        explanation,
+        threads: threadsCount,
+      });
 
-      const streamCopyContainers = ["MP4", "MOV", "MKV", "M4V", "TS"];
-      const isStreamCopyCandidate =
-        isDefaultSettings &&
-        streamCopyContainers.includes(inputExt.toUpperCase()) &&
-        streamCopyContainers.includes(outputFormat);
+      let converted = false;
 
       if (isStreamCopyCandidate) {
         isRemuxing = true;
+        self.postMessage({
+          type: "PROGRESS",
+          id,
+          pct: 10,
+          elapsedSec: (performance.now() - startTime) / 1000,
+          remainingSec: 0,
+          timeSec: 0,
+          stage: "Optimizing Streams",
+          conversionType: "Stream Copy",
+          explanation: "Fast conversion because the video and audio codecs are already compatible.",
+          threads: threadsCount,
+        });
+
         try {
           const copyArgs = ["-i", inputVirtualName, "-c", "copy"];
           if (["MP4", "MOV", "M4V"].includes(outputFormat)) {
@@ -486,15 +561,32 @@ self.onmessage = async (event: MessageEvent) => {
           const copyExitCode = await ffmpeg.exec(copyArgs);
           if (copyExitCode === 0) {
             converted = true;
+          } else {
+            try {
+              await ffmpeg.deleteFile(outputVirtualName);
+            } catch {
+              // ignore
+            }
           }
         } catch {
           converted = false;
           isRemuxing = false;
+          try {
+            await ffmpeg.deleteFile(outputVirtualName);
+          } catch {
+            // ignore
+          }
         }
       }
 
       if (!converted) {
         isRemuxing = false;
+        try {
+          await ffmpeg.deleteFile(outputVirtualName);
+        } catch {
+          // ignore
+        }
+
         const ffmpegArgs = buildFFmpegArgs(
           inputVirtualName,
           outputVirtualName,
@@ -503,7 +595,35 @@ self.onmessage = async (event: MessageEvent) => {
           performanceProfile,
         );
 
-        const exitCode = await ffmpeg.exec(ffmpegArgs);
+        let exitCode = await ffmpeg.exec(ffmpegArgs);
+
+        if (exitCode !== 0) {
+          // Safe fallback retry without faststart or complex settings
+          try {
+            await ffmpeg.deleteFile(outputVirtualName);
+          } catch {
+            // ignore
+          }
+
+          const fallbackArgs = [
+            "-i",
+            inputVirtualName,
+            "-vf",
+            "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-y",
+            outputVirtualName,
+          ];
+          exitCode = await ffmpeg.exec(fallbackArgs);
+        }
+
         if (exitCode !== 0) {
           throw new Error(`FFmpeg engine returned exit code ${exitCode}.`);
         }
@@ -512,15 +632,31 @@ self.onmessage = async (event: MessageEvent) => {
       self.postMessage({
         type: "PROGRESS",
         id,
-        pct: 99,
+        pct: 96,
         elapsedSec: (performance.now() - startTime) / 1000,
         remainingSec: 0,
         timeSec: metadata.duration,
-        stage: "Reading converted output...",
+        stage: "Preparing Download",
+        conversionType,
+        explanation,
+        threads: threadsCount,
       });
 
       const outputData = (await ffmpeg.readFile(outputVirtualName)) as Uint8Array;
       const buffer = outputData.buffer;
+
+      self.postMessage({
+        type: "PROGRESS",
+        id,
+        pct: 98,
+        elapsedSec: (performance.now() - startTime) / 1000,
+        remainingSec: 0,
+        timeSec: metadata.duration,
+        stage: "Cleaning Temporary Files",
+        conversionType,
+        explanation,
+        threads: threadsCount,
+      });
 
       self.postMessage(
         {
@@ -528,6 +664,8 @@ self.onmessage = async (event: MessageEvent) => {
           id,
           outputBuffer: buffer,
           outputFilename: finalDownloadFilename,
+          conversionType,
+          explanation,
         },
         // @ts-expect-error transfer list
         [buffer],

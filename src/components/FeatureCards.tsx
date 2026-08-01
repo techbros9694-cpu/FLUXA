@@ -60,19 +60,19 @@ export function FeatureCards() {
 
       <ScrollStack
         useWindowScroll={true}
-        itemDistance={60}
+        itemDistance={50}
         itemScale={0.04}
-        itemStackDistance={25}
+        itemStackDistance={20}
         stackPosition="18%"
         scaleEndPosition="8%"
-        baseScale={0.88}
-        rotationAmount={1.5}
-        blurAmount={0.5}
+        baseScale={0.9}
+        rotationAmount={1.2}
+        blurAmount={0}
       >
         {FEATURES.map(({ Icon, title, desc, bg, badge }, idx) => (
           <ScrollStackItem
             key={title}
-            itemClassName="group relative border border-ink/10 bg-white/90 dark:bg-surface/90 dark:border-white/10 p-6 sm:p-8 rounded-3xl shadow-2xl backdrop-blur-xl transition-shadow hover:shadow-lime/20"
+            itemClassName="group relative border border-ink/10 bg-white dark:bg-surface dark:border-white/10 p-6 sm:p-8 rounded-3xl shadow-xl transition-shadow hover:shadow-lime/20"
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">

@@ -7,6 +7,12 @@ export interface WorkerProgressPayload {
   remainingSec: number;
   timeSec: number;
   stage: string;
+  fps?: number;
+  speed?: string;
+  throughputMBs?: number;
+  conversionType?: "Stream Copy" | "Full Re-Encode";
+  explanation?: string;
+  threads?: number;
 }
 
 export class FFmpegService {

@@ -2,6 +2,18 @@ export type WorkflowStep = "upload" | "analyzing" | "configured" | "converting" 
 
 export type ItemStatus = "waiting" | "converting" | "completed" | "failed";
 
+export type ConversionStage =
+  | "Loading FFmpeg"
+  | "Reading Metadata"
+  | "Preparing Conversion"
+  | "Optimizing Streams"
+  | "Converting Video"
+  | "Processing Audio"
+  | "Writing Output File"
+  | "Preparing Download"
+  | "Cleaning Temporary Files"
+  | "Finished";
+
 export interface BatchItem {
   id: string;
   file: File;
@@ -10,6 +22,15 @@ export interface BatchItem {
   advancedSettings: AdvancedSettings;
   status: ItemStatus;
   progress: number; // 0 - 100
+  stage?: ConversionStage | string;
+  elapsedSeconds?: number;
+  etaSeconds?: number;
+  speed?: string;
+  fps?: number;
+  throughputMBs?: number;
+  threads?: number;
+  conversionType?: "Stream Copy" | "Full Re-Encode";
+  explanation?: string;
   funnyMessage?: string;
   statusText?: string;
   result?: ConversionResult | null;
@@ -77,6 +98,12 @@ export interface RealProgressState {
   percentage: number; // 0 - 100
   timeSeconds: number; // elapsed processing time in target video
   speed?: string; // e.g. "1.5x"
+  fps?: number; // e.g. 42
+  throughputMBs?: number; // e.g. 18.2
+  threads?: number;
+  stage: ConversionStage | string;
+  conversionType?: "Stream Copy" | "Full Re-Encode";
+  explanation?: string;
   etaSeconds?: number; // estimated remaining time
   funnyMessage: string;
   statusText: string;
@@ -88,9 +115,29 @@ export interface ConversionResult {
   filename: string;
   outputFormat: SupportedOutputFormat;
   originalSizeFormatted: string;
+  originalSizeBytes: number;
   outputSizeFormatted: string;
   outputSizeBytes: number;
   durationSeconds: number;
+  conversionType?: "Stream Copy" | "Full Re-Encode";
+  explanation?: string;
+  conversionTimeSeconds?: number;
+}
+
+export interface BatchSummaryStats {
+  totalFiles: number;
+  convertedFiles: number;
+  failedFiles: number;
+  totalOriginalSizeBytes: number;
+  totalOutputSizeBytes: number;
+  totalOriginalSizeFormatted: string;
+  totalOutputSizeFormatted: string;
+  savedSizeBytes: number;
+  savedSizeFormatted: string;
+  compressionRatioPercent: number;
+  totalBatchTimeSeconds: number;
+  totalBatchTimeFormatted: string;
+  avgSpeedRatio?: string;
 }
 
 export interface ValidationError {
