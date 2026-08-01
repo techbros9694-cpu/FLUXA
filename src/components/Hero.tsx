@@ -59,7 +59,7 @@ export function Hero() {
         <span className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-ink/70 shadow-float dark:bg-surface dark:text-white/90 dark:border-white/10">
           <span className="h-2 w-2 rounded-full bg-lime-bright animate-pulse" />
           <ShinyText
-            text="Open source · v0.0.chaotic"
+            text="Open source · v1.2.0"
             color="currentColor"
             shineColor="#a3e635"
             speed={2.5}

@@ -54,9 +54,48 @@ interface ChangelogVersion {
 
 const VERSIONS: ChangelogVersion[] = [
   {
-    version: "1.1.0",
-    badge: "✨ Latest Release",
+    version: "1.2.0",
+    badge: "🚀 Major Engine Update",
     badgeColor: "bg-lime text-neutral-950",
+    title: "⚙️ VideoMorph Core Engine Architecture",
+    date: "August 2026",
+    tagline:
+      "Single core processing engine powering all media operations, smart lossless stream copy, and pristine quality profiles.",
+    changes: [
+      {
+        category: "feature",
+        text: "Architected the unified VideoMorph Engine: modular processing backend powering Video Converter, Compressor, Trimmer, Audio Extractor, GIF tools, and utilities.",
+      },
+      {
+        category: "perf",
+        text: "Smart Decision Engine: automatic 100% loss-less Stream Copy (remuxing) when codecs match target container for instant conversion.",
+      },
+      {
+        category: "feature",
+        text: "High-Fidelity Quality Profiles: default CRF 19 (H.264) and CRF 21 (H.265) presets ensuring pristine video & audio quality without unintended compression.",
+      },
+      {
+        category: "fix",
+        text: "VP9/WebM Encoding Engine: upgraded to libopus audio, yuv420p pixel format, tile-columns, and row-mt for fast, compliant WebM output.",
+      },
+      {
+        category: "feature",
+        text: "Robust Output Quality Verification: automated EBML, MP4 container header checks, and payload size validation before user download.",
+      },
+      {
+        category: "perf",
+        text: "Dedicated Web Worker & Memory Manager: off-thread WASM execution with automatic Blob URL revocation to prevent memory leaks.",
+      },
+      {
+        category: "feature",
+        text: "Reusable Job Queue & Error System: background queue tracking, stage progress callbacks, and structured error handling.",
+      },
+    ],
+  },
+  {
+    version: "1.1.0",
+    badge: "✨ Feature Release",
+    badgeColor: "bg-sunny text-neutral-950",
     title: "✨ Quality of Life",
     date: "July 2026",
     tagline: "Smarter error handling, better mobile touch controls, and accessibility wins.",
