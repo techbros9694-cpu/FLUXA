@@ -83,13 +83,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "VideoMorph 🎬" },
+      { title: "FLUEXA 🎬 | All-In-One Media Converter" },
       {
         name: "description",
-        content: "Convert videos without crying. An open-source, playful video format converter.",
+        content:
+          "Convert, compress, trim, and morph video & audio instantly in your browser with FLUXA.",
       },
-      { name: "author", content: "VideoMorph" },
-      { property: "og:title", content: "VideoMorph — Convert Videos Without Crying" },
+      { name: "author", content: "FLUEXA" },
+      {
+        property: "og:title",
+        content: "FLUEXA — All-In-One Format Converter & Intelligence Engine",
+      },
       { property: "og:description", content: "Playful, fast, open-source video format converter." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

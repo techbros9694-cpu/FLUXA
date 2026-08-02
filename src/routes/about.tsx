@@ -7,6 +7,7 @@ import { FloatingIcons } from "@/components/FloatingIcons";
 import { WhoWeAre } from "@/components/WhoWeAre";
 import { Footer } from "@/components/Footer";
 import { ShinyText } from "@/components/ShinyText";
+import { FluxaLogo } from "@/components/FluxaLogo";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -166,7 +167,8 @@ function AboutPage() {
               <h1 className="mt-4 text-4xl font-black text-ink sm:text-7xl dark:text-white leading-tight">
                 Hey 👋 <br />
                 We&apos;re{" "}
-                <span className="inline-flex items-center gap-2 rounded-2xl bg-lime px-3 sm:px-4 py-1 text-neutral-950 shadow-float">
+                <span className="inline-flex items-center gap-2.5 rounded-2xl bg-lime px-3 sm:px-5 py-1 text-neutral-950 shadow-float">
+                  <FluxaLogo size={36} />
                   FLUXA
                   <div ref={sparkRef} className="inline-block">
                     <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-neutral-950" />

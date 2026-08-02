@@ -1,10 +1,10 @@
 /**
- * VideoMorph Engine - Convert Operation Module
+ * Fluexa Engine - Convert Operation Module
  */
 
 import { ConvertOperationOptions, EngineResult, ProgressCallback } from "../types/engine.types";
 import { EngineMetadataService } from "../metadata/metadata.service";
-import { SmartDecisionEngine } from "../decisionEngine/smartDecisionEngine";
+import { ConversionIntelligenceEngine } from "../decisionEngine/smartDecisionEngine";
 import { FFmpegCommandBuilder } from "../commandBuilder/ffmpegCommandBuilder";
 import { EngineWorkerManager } from "../workers/workerManager";
 import { EngineValidationService } from "../validation/validation.service";
@@ -32,8 +32,8 @@ export async function executeConvertOperation(
   // 2. Metadata Detection
   const metadata = await EngineMetadataService.extractMetadata(inputFile);
 
-  // 3. Smart Decision Engine Strategy Analysis
-  const strategy = SmartDecisionEngine.analyzeStrategy(
+  // 3. Conversion Intelligence Engine Strategy Analysis
+  const strategy = ConversionIntelligenceEngine.analyzeStrategy(
     metadata,
     options.outputFormat,
     options.advancedSettings,

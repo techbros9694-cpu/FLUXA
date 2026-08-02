@@ -1,6 +1,6 @@
 /**
- * VideoMorph Engine - Core Types
- * Centralized type definitions for the VideoMorph Engine processing pipeline.
+ * Fluexa Engine - Core Types
+ * Centralized type definitions for the Fluexa Conversion Intelligence Engine pipeline.
  */
 
 export type OperationType =
@@ -30,6 +30,22 @@ export type JobStatus =
   | "failed"
   | "cancelled";
 
+export type StrategyType =
+  | "lossless-stream-copy"
+  | "container-remux"
+  | "high-quality-reencode"
+  | "audio-only-processing"
+  | "gif-pipeline";
+
+export type SpeedCategory = "⚡ Instant" | "🚀 Medium" | "🐢 Heavy";
+
+export interface DeviceProfile {
+  logicalCores: number;
+  deviceMemoryGB: number;
+  highPerformanceDevice: boolean;
+  recommendedThreads: number;
+}
+
 export interface MediaMetadata {
   filename: string;
   filesize: number;
@@ -37,6 +53,10 @@ export interface MediaMetadata {
   container: string;
   videoCodec?: string;
   audioCodec?: string;
+  pixelFormat?: string;
+  colorSpace?: string;
+  bitDepth?: number;
+  isVFR?: boolean;
   width?: number;
   height?: number;
   resolution?: string;
@@ -45,16 +65,48 @@ export interface MediaMetadata {
   bitrate?: number;
   sampleRate?: number;
   audioChannels?: number;
+  rotation?: number;
+  hdrType?: string;
   hasVideo: boolean;
   hasAudio: boolean;
+  codecsInferred: boolean;
+  codecSource: "stream_inspection" | "container_analysis" | "browser_probe" | "extension_fallback";
+}
+
+export interface ConversionDecisionLog {
+  timestamp: string;
+  inputFilename: string;
+  inputFormat: string;
+  inputVideoCodec?: string;
+  inputAudioCodec?: string;
+  targetFormat: string;
+  containerCompatible: boolean;
+  codecCompatible: boolean;
+  audioCompatible: boolean;
+  filtersRequired: boolean;
+  selectedStrategy: StrategyType;
+  strategyName: string;
+  whyReason: string;
+  estimatedSpeed: SpeedCategory;
+  estimatedTimeSeconds: number;
+  estimatedSizeFormatted: string;
+  deviceProfile: DeviceProfile;
 }
 
 export interface ProcessingStrategy {
+  strategyType: StrategyType;
   isStreamCopy: boolean;
   explanation: string;
+  whyExplanation: string;
   recommendedVideoCodec: string;
   recommendedAudioCodec: string;
   recommendedPreset: string;
+  estimatedSpeed: SpeedCategory;
+  estimatedTimeSeconds: number;
+  estimatedSizeFormatted: string;
+  processingComplexity: "Low" | "Medium" | "High";
+  deviceProfile?: DeviceProfile;
+  decisionLog?: ConversionDecisionLog;
 }
 
 export interface EngineAdvancedSettings {

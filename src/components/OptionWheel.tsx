@@ -219,9 +219,20 @@ export function OptionWheel({
     const el = rootRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
       const cfg = cfgRef.current;
       const delta = e.deltaMode === 1 ? e.deltaY * 24 : e.deltaY;
+
+      // If loop is disabled, check if we are at boundary and scrolling outward
+      if (!cfg.loop) {
+        const atStart = targetRef.current <= 0 && delta < 0;
+        const atEnd = targetRef.current >= cfg.count - 1 && delta > 0;
+        if (atStart || atEnd) {
+          // Allow default page scrolling
+          return;
+        }
+      }
+
+      e.preventDefault();
       // Cap each event at one step so notchy mouse wheels move exactly one
       // option per click, while touchpads still scroll continuously.
       const step = Math.max(-1, Math.min(1, delta / cfg.rowH));

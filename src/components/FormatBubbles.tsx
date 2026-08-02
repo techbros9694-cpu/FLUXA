@@ -62,7 +62,7 @@ export function FormatBubbles() {
           fade={0.25}
           smoothing={200}
           inset={isMobile ? 24 : 120}
-          loop={true}
+          loop={false}
           draggable={true}
           onChange={(_index, item) => setSelectedFormat(item)}
         />

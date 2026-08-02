@@ -30,6 +30,9 @@ export interface BatchItem {
   throughputMBs?: number;
   threads?: number;
   conversionType?: "Stream Copy" | "Full Re-Encode";
+  strategyName?: string;
+  whyExplanation?: string;
+  estimatedSpeed?: string;
   explanation?: string;
   funnyMessage?: string;
   statusText?: string;

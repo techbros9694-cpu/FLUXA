@@ -22,13 +22,13 @@ gsap.registerPlugin(ScrollTrigger);
 export const Route = createFileRoute("/changelog")({
   head: () => ({
     meta: [
-      { title: "Changelog · VideoMorph — Improvements & Releases" },
+      { title: "Changelog · FLUEXA — Improvements & Releases" },
       {
         name: "description",
         content:
-          "See what's new in VideoMorph. Every improvement, every bug squashed, every tiny victory.",
+          "See what's new in FLUEXA. Every improvement, every bug squashed, every tiny victory.",
       },
-      { property: "og:title", content: "Changelog — VideoMorph" },
+      { property: "og:title", content: "Changelog — FLUEXA" },
       {
         property: "og:description",
         content: "Every improvement. Every bug squashed. Every tiny victory.",
@@ -57,14 +57,14 @@ const VERSIONS: ChangelogVersion[] = [
     version: "1.2.0",
     badge: "🚀 Major Engine Update",
     badgeColor: "bg-lime text-neutral-950",
-    title: "⚙️ VideoMorph Core Engine Architecture",
+    title: "⚙️ FLUEXA Core Intelligence Engine Architecture",
     date: "August 2026",
     tagline:
-      "Single core processing engine powering all media operations, smart lossless stream copy, and pristine quality profiles.",
+      "Single core processing engine powering all media operations, smart decision pipeline, and high quality presets.",
     changes: [
       {
         category: "feature",
-        text: "Architected the unified VideoMorph Engine: modular processing backend powering Video Converter, Compressor, Trimmer, Audio Extractor, GIF tools, and utilities.",
+        text: "Architected the unified FLUEXA Engine: modular processing backend powering Video Converter, Compressor, Trimmer, Audio Extractor, GIF tools, and utilities.",
       },
       {
         category: "perf",
@@ -143,7 +143,7 @@ const VERSIONS: ChangelogVersion[] = [
     badgeColor: "bg-ink text-white dark:bg-white dark:text-neutral-950",
     title: "🎉 Initial Release",
     date: "May 2026",
-    tagline: "The birth of VideoMorph: private, browser-based video conversion without tears.",
+    tagline: "The birth of FLUEXA: private, browser-based media conversion with intelligence.",
     changes: [
       {
         category: "feature",

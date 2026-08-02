@@ -1,5 +1,5 @@
 /**
- * VideoMorph Engine - Error Taxonomy
+ * FLUXA Engine - Error Taxonomy
  * Centralized error handler and standard exception classes.
  */
 
@@ -63,7 +63,7 @@ export class EngineErrorHandler {
     }
     if (message.includes("FFmpeg worker") || message.includes("Worker")) {
       return new WorkerExecutionError(
-        "FFmpeg worker processing failed. VideoMorph fallback re-encoding will take over.",
+        "FFmpeg worker processing failed. FLUXA fallback re-encoding will take over.",
         err,
       );
     }

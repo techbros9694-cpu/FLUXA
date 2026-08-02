@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { Github, Moon, Sun } from "lucide-react";
 import { ShinyText } from "./ShinyText";
+import { FluxaLogo } from "./FluxaLogo";
 
 interface NavItem {
   id: string;
@@ -158,15 +159,15 @@ export function FloatingNavbar() {
               window.scrollTo({ top: 0, behavior: "smooth" });
             }
           }}
-          className="flex h-7 sm:h-9 items-center gap-1 sm:gap-1.5 rounded-full bg-ink px-2 sm:px-3.5 text-[11px] sm:text-sm font-black text-white hover:scale-105 transition-transform shrink-0 dark:bg-white dark:text-neutral-950 shadow-sm"
+          className="flex h-7 sm:h-9 items-center gap-1.5 sm:gap-2 rounded-full bg-ink px-2.5 sm:px-3.5 text-[11px] sm:text-sm font-black text-white hover:scale-105 transition-transform shrink-0 dark:bg-white dark:text-neutral-950 shadow-sm"
         >
-          <span className="text-[10px] sm:text-sm">🎬</span>
+          <FluxaLogo size={20} />
           <ShinyText
-            text="FLUXA"
+            text="FLUEXA"
             color="currentColor"
             shineColor="#a3e635"
             speed={2.5}
-            className="font-black text-[11px] sm:text-sm"
+            className="font-black text-[11px] sm:text-sm tracking-tight"
           />
         </Link>
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { FloatingIcons } from "./FloatingIcons";
 import { ShinyText } from "./ShinyText";
+import { FluxaLogo } from "./FluxaLogo";
 
 const SUBTITLES = [
   "Making MP4s behave since today.",
@@ -57,9 +58,10 @@ export function Hero() {
       <FloatingIcons />
       <div className="relative z-10 mx-auto max-w-5xl px-6 text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-ink/70 shadow-float dark:bg-surface dark:text-white/90 dark:border-white/10">
+          <FluxaLogo size={18} />
           <span className="h-2 w-2 rounded-full bg-lime-bright animate-pulse" />
           <ShinyText
-            text="Open source · v1.2.0"
+            text="FLUEXA Intelligence Engine · v1.2.0"
             color="currentColor"
             shineColor="#a3e635"
             speed={2.5}

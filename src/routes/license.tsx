@@ -25,13 +25,13 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/license")({
   head: () => ({
     meta: [
-      { title: "MIT License · VideoMorph — Open Source & Free" },
+      { title: "MIT License · FLUEXA — Open Source & Free" },
       {
         name: "description",
         content:
-          "VideoMorph is 100% open source software released under the permissive MIT License. Use, modify, and share freely.",
+          "FLUEXA is 100% open source software released under the permissive MIT License. Use, modify, and share freely.",
       },
-      { property: "og:title", content: "MIT License — VideoMorph" },
+      { property: "og:title", content: "MIT License — FLUEXA" },
       {
         property: "og:description",
         content: "Open Source. Open Ideas. Open for Everyone.",
@@ -44,7 +44,7 @@ export const Route = createFileRoute("/license")({
 
 const MIT_TEXT = `MIT License
 
-Copyright (c) 2026 VideoMorph / FLUXA Open Source Project
+Copyright (c) 2026 FLUXA Open Source Project
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -69,7 +69,7 @@ const PERMISSIONS = [
     icon: Building2,
     title: "Commercial Use",
     allowed: true,
-    desc: "Use VideoMorph or its code in commercial products and paid services without restrictions.",
+    desc: "Use FLUEXA or its code in commercial products and paid services without restrictions.",
   },
   {
     icon: FileSpreadsheet,
@@ -213,8 +213,8 @@ function LicensePage() {
             <ShieldCheck className="h-5 w-5" />
           </div>
           <p className="text-sm sm:text-base font-bold text-ink/90 dark:text-white/90 leading-relaxed">
-            Good news! You can use, modify, and share VideoMorph. Just remember to keep the
-            copyright notice. That&apos;s the MIT way.
+            Good news! You can use, modify, and share FLUEXA. Just remember to keep the copyright
+            notice. That&apos;s the MIT way.
           </p>
         </div>
       </section>

@@ -20,13 +20,13 @@ import { Footer } from "@/components/Footer";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy · VideoMorph — Your Videos Stay Yours" },
+      { title: "Privacy Policy · FLUEXA — Your Media Stays Yours" },
       {
         name: "description",
         content:
-          "VideoMorph processes videos 100% inside your browser. No server uploads, no accounts, no tracking, total privacy.",
+          "FLUEXA processes media 100% inside your browser. No server uploads, no accounts, no tracking, total privacy.",
       },
-      { property: "og:title", content: "Privacy Policy — VideoMorph" },
+      { property: "og:title", content: "Privacy Policy — FLUEXA" },
       {
         property: "og:description",
         content: "Your videos stay on your device. Always.",
@@ -54,7 +54,7 @@ const SECTIONS = [
     icon: UserX,
     emoji: "🔒",
     title: "No Accounts Required",
-    desc: "No passwords, no email registrations, and no login portals. You open VideoMorph, drop your video, convert, and download. That's all.",
+    desc: "No passwords, no email registrations, and no login portals. You open FLUEXA, drop your video, convert, and download. That's all.",
   },
   {
     icon: EyeOff,
@@ -72,7 +72,7 @@ const SECTIONS = [
     icon: Code,
     emoji: "💚",
     title: "Open Source Transparency",
-    desc: "Because VideoMorph is 100% open source under the MIT License, you don't have to trust our words — you can inspect every line of code on GitHub yourself.",
+    desc: "Because FLUEXA is 100% open source under the MIT License, you don't have to trust our words — you can inspect every line of code on GitHub yourself.",
   },
 ];
 
@@ -216,7 +216,7 @@ function PrivacyPage() {
           <h2 className="text-2xl sm:text-3xl font-black text-white mb-3">Privacy Promise 💚</h2>
 
           <p className="text-base sm:text-lg font-bold text-white/90 max-w-lg mx-auto leading-relaxed">
-            &ldquo;We built VideoMorph because your videos belong to you—not to us.&rdquo;
+            &ldquo;We built FLUEXA because your media belongs to you—not to us.&rdquo;
           </p>
 
           <p className="mt-4 text-xs font-semibold text-lime/80 uppercase tracking-widest">

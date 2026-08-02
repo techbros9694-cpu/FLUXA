@@ -1,5 +1,5 @@
 /**
- * VideoMorph Engine - Central Processing Engine
+ * Fluexa Engine - Central Processing Engine
  * Unified backend and processing pipeline powering present and future media tools.
  */
 
@@ -18,11 +18,14 @@ import {
   EngineResult,
   ProgressCallback,
   MediaMetadata,
+  ProcessingStrategy,
+  EngineAdvancedSettings,
 } from "./types/engine.types";
 
 import { JobQueue } from "./queue/jobQueue";
 import { EngineMetadataService } from "./metadata/metadata.service";
 import { EngineValidationService } from "./validation/validation.service";
+import { ConversionIntelligenceEngine } from "./decisionEngine/smartDecisionEngine";
 import { MemoryManager } from "./memory/memoryManager";
 import { EngineErrorHandler } from "./error/engineError";
 
@@ -38,8 +41,8 @@ import {
   executeAudioOperation,
 } from "./operations/utility.operations";
 
-export class VideoMorphEngine {
-  private static instance: VideoMorphEngine;
+export class FluexaEngine {
+  private static instance: FluexaEngine;
   private queue: JobQueue = new JobQueue();
 
   private constructor() {}
@@ -47,11 +50,11 @@ export class VideoMorphEngine {
   /**
    * Singleton instance retriever
    */
-  public static getInstance(): VideoMorphEngine {
-    if (!VideoMorphEngine.instance) {
-      VideoMorphEngine.instance = new VideoMorphEngine();
+  public static getInstance(): FluexaEngine {
+    if (!FluexaEngine.instance) {
+      FluexaEngine.instance = new FluexaEngine();
     }
-    return VideoMorphEngine.instance;
+    return FluexaEngine.instance;
   }
 
   /**
@@ -66,6 +69,19 @@ export class VideoMorphEngine {
    */
   public async inspect(file: File): Promise<MediaMetadata> {
     return EngineMetadataService.extractMetadata(file);
+  }
+
+  /**
+   * Inspect metadata AND analyze conversion strategy with ConversionIntelligenceEngine
+   */
+  public async inspectWithStrategy(
+    file: File,
+    targetFormat: string,
+    advanced?: EngineAdvancedSettings,
+  ): Promise<{ metadata: MediaMetadata; strategy: ProcessingStrategy }> {
+    const metadata = await EngineMetadataService.extractMetadata(file);
+    const strategy = ConversionIntelligenceEngine.analyzeStrategy(metadata, targetFormat, advanced);
+    return { metadata, strategy };
   }
 
   /**
@@ -244,4 +260,5 @@ export class VideoMorphEngine {
 }
 
 // Global export singleton
-export const engine = VideoMorphEngine.getInstance();
+export const engine = FluexaEngine.getInstance();
+export const VideoMorphEngine = FluexaEngine;

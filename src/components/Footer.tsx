@@ -1,6 +1,7 @@
 import { Github, Heart, Coffee } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { ShinyText } from "./ShinyText";
+import { FluxaLogo } from "./FluxaLogo";
 
 export function Footer() {
   return (
@@ -9,9 +10,9 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-3">
           <div>
             <div className="flex items-center gap-2 text-xl font-black text-ink dark:text-white">
-              <span>🎬</span>
+              <FluxaLogo size={28} />
               <ShinyText
-                text="FLUXA"
+                text="FLUEXA"
                 color="currentColor"
                 shineColor="#a3e635"
                 speed={2.5}
