@@ -213,7 +213,7 @@ function isrRouteRewrite(reqUrl, xNowRouteMatches) {
 var handler = toNodeHandler(useNitroApp().fetch);
 function nodeHandler(req, res) {
 	let ip;
-	Object.defineProperty(req.socket, "remoteAddress", { get() {
+	if (req.socket) Object.defineProperty(req.socket, "remoteAddress", { get() {
 		const h = req.headers["x-forwarded-for"];
 		return ip ??= h?.split?.(",").shift()?.trim();
 	} });
