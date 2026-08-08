@@ -1,5 +1,5 @@
 import "../_runtime.mjs";
-import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
+import { u as require_react } from "../_libs/@floating-ui/react-dom_etc.mjs";
 import { t as require_jsx_dev_runtime } from "../_libs/react.mjs";
 require_react();
 var import_jsx_dev_runtime = require_jsx_dev_runtime();

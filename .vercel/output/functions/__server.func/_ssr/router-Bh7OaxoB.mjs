@@ -1,10 +1,10 @@
 import { r as __toESM } from "../_runtime.mjs";
-import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
+import { u as require_react } from "../_libs/@floating-ui/react-dom_etc.mjs";
 import { t as require_jsx_dev_runtime } from "../_libs/react.mjs";
 import { n as ShinyText, t as FluxaLogo } from "./FluxaLogo-CWJSwkgl.mjs";
 import { n as gsapWithCSS, t as ScrollTrigger } from "../_libs/gsap.mjs";
 import { D as Moon, L as Github, f as Sun, ut as ArrowUp } from "../_libs/lucide-react.mjs";
-import { _ as useNavigate, c as HeadContent, d as createRouter, f as Outlet, g as Link, h as createRootRouteWithContext, l as useLocation, m as createFileRoute, p as lazyRouteComponent, s as Scripts, v as useRouter } from "../_libs/@tanstack/react-router+[...].mjs";
+import { _ as useNavigate, c as HeadContent, d as createRouter, f as Outlet, g as Link, h as createRootRouteWithContext, l as useLocation, m as createFileRoute, p as lazyRouteComponent, s as Scripts, v as useRouter } from "../_libs/@tanstack/react-router_etc.mjs";
 import { t as Toaster } from "../_libs/sonner.mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
 import { t as QueryClientProvider } from "../_libs/tanstack__react-query.mjs";

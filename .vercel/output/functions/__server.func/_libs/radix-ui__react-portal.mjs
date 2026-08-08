@@ -1,6 +1,6 @@
 import { r as __toESM } from "../_runtime.mjs";
-import { l as require_react_dom, u as require_react } from "./@floating-ui/react-dom+[...].mjs";
-import { c as useLayoutEffect2, g as require_jsx_runtime, l as Primitive } from "./@radix-ui/react-accordion+[...].mjs";
+import { l as require_react_dom, u as require_react } from "./@floating-ui/react-dom_etc.mjs";
+import { c as useLayoutEffect2, g as require_jsx_runtime, l as Primitive } from "./@radix-ui/react-accordion_etc.mjs";
 //#region node_modules/@radix-ui/react-portal/dist/index.mjs
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
 var import_react_dom = /* @__PURE__ */ __toESM(require_react_dom(), 1);

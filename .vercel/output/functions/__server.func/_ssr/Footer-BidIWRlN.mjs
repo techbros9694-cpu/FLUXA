@@ -1,7 +1,7 @@
 import { t as require_jsx_dev_runtime } from "../_libs/react.mjs";
 import { n as ShinyText, t as FluxaLogo } from "./FluxaLogo-CWJSwkgl.mjs";
 import { L as Github, P as Heart, Q as Coffee } from "../_libs/lucide-react.mjs";
-import { g as Link } from "../_libs/@tanstack/react-router+[...].mjs";
+import { g as Link } from "../_libs/@tanstack/react-router_etc.mjs";
 //#region node_modules/.nitro/vite/services/ssr/assets/Footer-BidIWRlN.js
 var import_jsx_dev_runtime = require_jsx_dev_runtime();
 var _jsxFileName = "/app/applet/src/components/Footer.tsx";

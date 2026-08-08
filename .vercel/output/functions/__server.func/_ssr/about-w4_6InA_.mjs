@@ -1,5 +1,5 @@
 import { r as __toESM } from "../_runtime.mjs";
-import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
+import { u as require_react } from "../_libs/@floating-ui/react-dom_etc.mjs";
 import { t as require_jsx_dev_runtime } from "../_libs/react.mjs";
 import { n as ShinyText, t as FluxaLogo } from "./FluxaLogo-CWJSwkgl.mjs";
 import { n as gsapWithCSS, t as ScrollTrigger } from "../_libs/gsap.mjs";

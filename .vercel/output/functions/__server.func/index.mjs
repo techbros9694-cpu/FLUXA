@@ -1,5 +1,5 @@
 globalThis.__nitro_main__ = import.meta.url;
-import { i as defineLazyEventHandler, n as HTTPError, o as NodeResponse, s as toNodeHandler, t as H3Core } from "./_libs/h3+rou3+srvx.mjs";
+import { i as defineLazyEventHandler, n as HTTPError, o as NodeResponse, s as toNodeHandler, t as H3Core } from "./_libs/h3_rou3_srvx.mjs";
 //#region #nitro-vite-setup
 function lazyService(loader) {
 	let promise, mod;
@@ -213,10 +213,16 @@ function isrRouteRewrite(reqUrl, xNowRouteMatches) {
 var handler = toNodeHandler(useNitroApp().fetch);
 function nodeHandler(req, res) {
 	let ip;
-	if (req.socket) Object.defineProperty(req.socket, "remoteAddress", { get() {
-		const h = req.headers["x-forwarded-for"];
-		return ip ??= h?.split?.(",").shift()?.trim();
-	} });
+	if (req.socket) {
+		if (req.socket) {
+			if (req.socket) {
+				if (req.socket) Object.defineProperty(req.socket, "remoteAddress", { get() {
+					const h = req.headers["x-forwarded-for"];
+					return ip ??= h?.split?.(",").shift()?.trim();
+				} });
+			}
+		}
+	}
 	const isrURL = isrRouteRewrite(req.url, req.headers["x-now-route-matches"]);
 	if (isrURL) {
 		const { routeRules } = getRouteRules("", isrURL[0]);

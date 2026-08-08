@@ -1,5 +1,5 @@
 import { r as __toESM } from "../_runtime.mjs";
-import { u as require_react } from "../_libs/@floating-ui/react-dom+[...].mjs";
+import { u as require_react } from "../_libs/@floating-ui/react-dom_etc.mjs";
 import { t as require_jsx_dev_runtime } from "../_libs/react.mjs";
 import { n as gsapWithCSS } from "../_libs/gsap.mjs";
 import { S as Popcorn, V as Film, ct as Camera, m as Sparkles, nt as Clapperboard, r as Video, w as Play } from "../_libs/lucide-react.mjs";

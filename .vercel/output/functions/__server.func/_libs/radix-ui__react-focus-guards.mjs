@@ -1,5 +1,5 @@
 import { r as __toESM } from "../_runtime.mjs";
-import { u as require_react } from "./@floating-ui/react-dom+[...].mjs";
+import { u as require_react } from "./@floating-ui/react-dom_etc.mjs";
 //#region node_modules/@radix-ui/react-focus-guards/dist/index.mjs
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
 var count = 0;

@@ -1,7 +1,7 @@
 import { r as __toESM } from "../_runtime.mjs";
-import { u as require_react } from "./@floating-ui/react-dom+[...].mjs";
-import { g as require_jsx_runtime, l as Primitive, m as useComposedRefs } from "./@radix-ui/react-accordion+[...].mjs";
-import { n as useCallbackRef } from "./@radix-ui/react-dismissable-layer+[...].mjs";
+import { u as require_react } from "./@floating-ui/react-dom_etc.mjs";
+import { g as require_jsx_runtime, l as Primitive, m as useComposedRefs } from "./@radix-ui/react-accordion_etc.mjs";
+import { n as useCallbackRef } from "./@radix-ui/react-dismissable-layer_etc.mjs";
 //#region node_modules/@radix-ui/react-focus-scope/dist/index.mjs
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
 var import_jsx_runtime = require_jsx_runtime();
