@@ -216,10 +216,16 @@ function nodeHandler(req, res) {
 	if (req.socket) {
 		if (req.socket) {
 			if (req.socket) {
-				if (req.socket) Object.defineProperty(req.socket, "remoteAddress", { get() {
-					const h = req.headers["x-forwarded-for"];
-					return ip ??= h?.split?.(",").shift()?.trim();
-				} });
+				if (req.socket) {
+					if (req.socket) {
+						if (req.socket) {
+							if (req.socket) Object.defineProperty(req.socket, "remoteAddress", { get() {
+								const h = req.headers["x-forwarded-for"];
+								return ip ??= h?.split?.(",").shift()?.trim();
+							} });
+						}
+					}
+				}
 			}
 		}
 	}
