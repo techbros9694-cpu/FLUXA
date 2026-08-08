@@ -170,7 +170,7 @@ export class FluexaEngine {
           break;
         default:
           result = await executeConvertOperation(
-            options as ConvertOperationOptions,
+            options as unknown as ConvertOperationOptions,
             job.id,
             onProgress,
           );

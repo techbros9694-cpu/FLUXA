@@ -32,7 +32,7 @@ export class DownloadService {
     format: SupportedOutputFormat,
   ): { blob: Blob; url: string } {
     const mimeType = this.getMimeType(format);
-    const blob = new Blob([data], { type: mimeType });
+    const blob = new Blob([data.buffer as ArrayBuffer], { type: mimeType });
     const url = URL.createObjectURL(blob);
     return { blob, url };
   }
