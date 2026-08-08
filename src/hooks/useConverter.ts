@@ -83,9 +83,23 @@ export function useConverter() {
   const isConvertingRef = useRef<boolean>(false);
   const cancelRequestedRef = useRef<boolean>(false);
 
+  const queueRef = useRef(queue);
+  queueRef.current = queue;
+
   // Preload FFmpeg worker in background when hook mounts
   useEffect(() => {
     FFmpegService.preload();
+  }, []);
+
+  // Revoke Blob URLs when component unmounts to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      queueRef.current.forEach((item) => {
+        if (item.result?.downloadUrl) {
+          DownloadService.revokeUrl(item.result.downloadUrl);
+        }
+      });
+    };
   }, []);
 
   // Track elapsed timer for converting batch

@@ -1,5 +1,4 @@
 import { SupportedOutputFormat } from "@/types/converter";
-import JSZip from "jszip";
 
 export class DownloadService {
   /**
@@ -57,6 +56,7 @@ export class DownloadService {
     results: { filename: string; blob: Blob }[],
     zipFilename = "videomorph-converted-videos.zip",
   ): Promise<void> {
+    const { default: JSZip } = await import("jszip");
     const zip = new JSZip();
     for (const item of results) {
       zip.file(item.filename, item.blob);

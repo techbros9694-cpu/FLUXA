@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo, useCallback } from "react";
 import gsap from "gsap";
 import {
   Upload,
@@ -207,6 +207,10 @@ const CODECS = ["Auto (Recommended)", "H.264", "H.265 / HEVC", "VP9", "AV1", "Pr
 const BITRATES = ["Auto", "16 Mbps", "12 Mbps", "8 Mbps", "4 Mbps", "2 Mbps"];
 const FPS_OPTIONS = ["Same as Original", "60 FPS", "30 FPS", "24 FPS"];
 const AUDIO_QUALITIES = ["Original", "320 kbps", "256 kbps", "192 kbps", "128 kbps", "Mute Audio"];
+
+const NOOP_FORMAT_CHANGE = () => {};
+const NOOP_REMOVE = () => {};
+const NOOP_DOWNLOAD = () => {};
 
 export function ConverterPanel() {
   const {
@@ -1052,9 +1056,9 @@ function ConversionDashboardView({
               item={item}
               index={idx + 1}
               isConvertingBatch={true}
-              onFormatChange={() => {}}
-              onRemove={() => {}}
-              onDownload={() => {}}
+              onFormatChange={NOOP_FORMAT_CHANGE}
+              onRemove={NOOP_REMOVE}
+              onDownload={NOOP_DOWNLOAD}
             />
           ))}
         </div>
@@ -1221,7 +1225,7 @@ function CompletionSummaryScreen({
 /**
  * INDIVIDUAL QUEUE ROW COMPONENT
  */
-function QueueItemRow({
+const QueueItemRow = memo(function QueueItemRow({
   item,
   index,
   isConvertingBatch,
@@ -1429,9 +1433,15 @@ function QueueItemRow({
       )}
     </div>
   );
-}
+});
 
-function StatusTag({ status, stage }: { status: BatchItem["status"]; stage?: string }) {
+const StatusTag = memo(function StatusTag({
+  status,
+  stage,
+}: {
+  status: BatchItem["status"];
+  stage?: string;
+}) {
   switch (status) {
     case "waiting":
       return (
@@ -1458,7 +1468,7 @@ function StatusTag({ status, stage }: { status: BatchItem["status"]; stage?: str
         </span>
       );
   }
-}
+});
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
