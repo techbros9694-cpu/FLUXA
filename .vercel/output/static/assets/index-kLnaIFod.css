@@ -1,0 +1,1 @@
+@keyframes shinyText{0%{background-position:150%}to{background-position:-50%}}.shiny-text{-webkit-text-fill-color:transparent;background-size:200%;-webkit-background-clip:text;background-clip:text;animation:3s linear infinite shinyText;display:inline-block}.shiny-text-disabled{animation:none}
