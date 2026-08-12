@@ -21,7 +21,12 @@ export class FFmpegService {
   private static activeCallbacks: Map<
     string,
     {
-      resolve: (data: { outputBuffer: ArrayBuffer; outputFilename: string }) => void;
+      resolve: (data: {
+        outputBuffer: ArrayBuffer;
+        outputFilename: string;
+        conversionType?: "Stream Copy" | "Full Re-Encode";
+        explanation?: string;
+      }) => void;
       reject: (reason: Error) => void;
       onProgress?: (progress: WorkerProgressPayload) => void;
     }
@@ -55,6 +60,8 @@ export class FFmpegService {
             cb.resolve({
               outputBuffer: data.outputBuffer as ArrayBuffer,
               outputFilename: data.outputFilename as string,
+              conversionType: data.conversionType as "Stream Copy" | "Full Re-Encode",
+              explanation: data.explanation as string,
             });
           }
         } else if (type === "CONVERT_ERROR" && id) {
@@ -137,7 +144,12 @@ export class FFmpegService {
     advanced?: AdvancedSettings,
     onProgress?: (progress: WorkerProgressPayload) => void,
     existingFilenames?: string[],
-  ): Promise<{ outputBuffer: ArrayBuffer; outputFilename: string }> {
+  ): Promise<{
+    outputBuffer: ArrayBuffer;
+    outputFilename: string;
+    conversionType?: "Stream Copy" | "Full Re-Encode";
+    explanation?: string;
+  }> {
     await this.initEngine();
 
     const worker = this.getWorker();

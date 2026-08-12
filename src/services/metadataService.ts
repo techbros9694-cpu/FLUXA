@@ -1,4 +1,5 @@
 import { VideoMetadata, SupportedOutputFormat } from "@/types/converter";
+import { EngineMetadataService } from "@/engine/metadata/metadata.service";
 
 export function getItemInputFormat(item: { file: File; metadata?: VideoMetadata | null }): string {
   let fmt = item.metadata?.format || item.file.name.split(".").pop() || "MP4";
@@ -48,11 +49,24 @@ export function formatDuration(seconds: number): string {
 
 export class MetadataService {
   /**
-   * Extract real metadata from uploaded video file using HTML5 Video element & file properties
+   * Extract real metadata from uploaded video file using binary header stream inspection & HTML5 video element
    */
   static async extractMetadata(file: File): Promise<VideoMetadata> {
     const ext = file.name.split(".").pop()?.toUpperCase() || "MP4";
     const fileSizeFormatted = formatBytes(file.size);
+
+    let probedVideoCodec = "";
+    let probedAudioCodec = "";
+    let probedContainer = "";
+
+    try {
+      const engineMeta = await EngineMetadataService.extractMetadata(file);
+      if (engineMeta.videoCodec) probedVideoCodec = engineMeta.videoCodec;
+      if (engineMeta.audioCodec) probedAudioCodec = engineMeta.audioCodec;
+      if (engineMeta.container) probedContainer = engineMeta.container;
+    } catch {
+      // Ignore binary inspection error and fallback
+    }
 
     return new Promise((resolve) => {
       // Default fallback codecs mapped by format
@@ -74,7 +88,9 @@ export class MetadataService {
         GIF: { v: "GIF Palette", a: "None" },
       };
 
-      const codecs = defaultCodecMap[ext] || { v: "H.264", a: "AAC" };
+      const fallbackCodecs = defaultCodecMap[ext] || { v: "H.264", a: "AAC" };
+      const videoCodec = probedVideoCodec || fallbackCodecs.v;
+      const audioCodec = probedAudioCodec || fallbackCodecs.a;
 
       // Try reading dimensions & duration via video element
       const url = URL.createObjectURL(file);
@@ -104,9 +120,9 @@ export class MetadataService {
           fileSize: file.size,
           sizeFormatted: fileSizeFormatted,
           format: ext,
-          container: ext,
-          videoCodec: codecs.v,
-          audioCodec: codecs.a,
+          container: probedContainer || ext,
+          videoCodec,
+          audioCodec,
           resolution: resStr,
           width: width || 1920,
           height: height || 1080,

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, memo, useCallback } from "react";
 import gsap from "gsap";
+import { ItemConversionTimer } from "@/components/ItemConversionTimer";
 import {
   Upload,
   Sparkles,
@@ -926,9 +927,20 @@ function ConversionDashboardView({
               <Film className="h-4 w-4 text-lime" />
               {currentFile.file.name}
             </span>
-            <span className="text-lime-bright dark:text-lime text-base font-black">
-              {progress.percentage}%
-            </span>
+            <div className="flex items-center gap-2">
+              <ItemConversionTimer
+                startTime={currentFile.startTime}
+                endTime={currentFile.endTime}
+                conversionTimeSeconds={currentFile.conversionTimeSeconds}
+                status={currentFile.status}
+                includeHundredths={true}
+                className="text-xs font-black text-lime-bright dark:text-lime"
+                prefix="⏱ "
+              />
+              <span className="text-lime-bright dark:text-lime text-base font-black">
+                {progress.percentage}%
+              </span>
+            </div>
           </div>
 
           <div className="h-4 w-full rounded-full bg-ink/10 dark:bg-white/10 overflow-hidden p-0.5">
@@ -1352,7 +1364,7 @@ const QueueItemRow = memo(function QueueItemRow({
 
           <div className="flex items-center gap-2 shrink-0">
             {/* STATUS BADGE */}
-            <StatusTag status={item.status} stage={item.stage} />
+            <StatusTag item={item} />
 
             {/* DOWNLOAD BUTTON FOR COMPLETED ITEM */}
             {isCompleted && (
@@ -1366,12 +1378,12 @@ const QueueItemRow = memo(function QueueItemRow({
               </button>
             )}
 
-            {/* RETRY SINGLE BUTTON FOR FAILED ITEM */}
-            {isFailed && onRetrySingle && (
+            {/* RETRY SINGLE BUTTON FOR FAILED OR CANCELLED ITEM */}
+            {(isFailed || isCancelled) && onRetrySingle && (
               <button
                 type="button"
                 onClick={onRetrySingle}
-                className="inline-flex min-h-[40px] items-center gap-1 rounded-xl bg-red-500 px-3 py-2 text-xs font-bold text-white hover:bg-red-600 shadow-sm cursor-pointer transition-transform active:scale-95"
+                className="inline-flex min-h-[40px] items-center gap-1 rounded-xl bg-amber-500 px-3 py-2 text-xs font-bold text-white hover:bg-amber-600 shadow-sm cursor-pointer transition-transform active:scale-95"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 <span>Retry</span>
@@ -1435,37 +1447,91 @@ const QueueItemRow = memo(function QueueItemRow({
   );
 });
 
-const StatusTag = memo(function StatusTag({
-  status,
-  stage,
-}: {
-  status: BatchItem["status"];
-  stage?: string;
-}) {
-  switch (status) {
+const StatusTag = memo(function StatusTag({ item }: { item: BatchItem }) {
+  switch (item.status) {
     case "waiting":
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-surface-2 text-ink/60 dark:text-white/60 border border-ink/5 dark:border-white/5">
-          <Clock className="h-3 w-3" /> Waiting
+          <Clock className="h-3 w-3" /> Waiting...
         </span>
       );
     case "converting":
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-lime/30 text-neutral-950 dark:text-lime border border-lime/40 animate-pulse">
-          {stage || "Converting"}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-lime/30 text-neutral-950 dark:text-lime border border-lime/40 animate-pulse">
+            <Sparkles className="h-3 w-3 text-lime animate-spin" />
+            Converting...
+          </span>
+          <ItemConversionTimer
+            startTime={item.startTime}
+            endTime={item.endTime}
+            conversionTimeSeconds={item.conversionTimeSeconds}
+            status={item.status}
+            includeHundredths={true}
+            className="text-xs font-black text-lime-bright dark:text-lime"
+            prefix="⏱ "
+          />
+        </div>
       );
     case "completed":
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-lime/20 text-neutral-950 dark:text-lime border border-lime/30">
-          <CheckCircle2 className="h-3 w-3 text-lime" /> Completed
-        </span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-lime/20 text-neutral-950 dark:text-lime border border-lime/30">
+            <CheckCircle2 className="h-3 w-3 text-lime" /> ✓ Completed
+          </span>
+          <span className="text-xs font-bold text-ink/80 dark:text-white/80 flex items-center gap-1">
+            Conversion time:{" "}
+            <ItemConversionTimer
+              startTime={item.startTime}
+              endTime={item.endTime}
+              conversionTimeSeconds={item.conversionTimeSeconds}
+              status={item.status}
+              includeHundredths={true}
+              className="text-xs font-black text-lime-bright dark:text-lime"
+              prefix=""
+            />
+          </span>
+        </div>
       );
     case "failed":
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30">
-          Failed
-        </span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30">
+            ✕ Failed
+          </span>
+          <span className="text-xs font-bold text-red-500 flex items-center gap-1">
+            Time elapsed:{" "}
+            <ItemConversionTimer
+              startTime={item.startTime}
+              endTime={item.endTime}
+              conversionTimeSeconds={item.conversionTimeSeconds}
+              status={item.status}
+              includeHundredths={true}
+              className="text-xs font-black text-red-500"
+              prefix=""
+            />
+          </span>
+        </div>
+      );
+    case "cancelled":
+      return (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+            Cancelled
+          </span>
+          <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+            Time elapsed:{" "}
+            <ItemConversionTimer
+              startTime={item.startTime}
+              endTime={item.endTime}
+              conversionTimeSeconds={item.conversionTimeSeconds}
+              status={item.status}
+              includeHundredths={true}
+              className="text-xs font-black text-amber-600 dark:text-amber-400"
+              prefix=""
+            />
+          </span>
+        </div>
       );
   }
 });

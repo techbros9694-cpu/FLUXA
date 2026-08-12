@@ -1,6 +1,6 @@
 export type WorkflowStep = "upload" | "analyzing" | "configured" | "converting" | "done" | "error";
 
-export type ItemStatus = "waiting" | "converting" | "completed" | "failed";
+export type ItemStatus = "waiting" | "converting" | "completed" | "failed" | "cancelled";
 
 export type ConversionStage =
   | "Loading FFmpeg"
@@ -24,6 +24,9 @@ export interface BatchItem {
   progress: number; // 0 - 100
   stage?: ConversionStage | string;
   elapsedSeconds?: number;
+  startTime?: number;
+  endTime?: number;
+  conversionTimeSeconds?: number;
   etaSeconds?: number;
   speed?: string;
   fps?: number;

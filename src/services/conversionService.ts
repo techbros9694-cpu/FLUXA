@@ -137,7 +137,12 @@ export class ConversionService {
     advanced?: AdvancedSettings,
     onProgress?: (payload: WorkerProgressPayload) => void,
     existingFilenames?: string[] | Set<string>,
-  ): Promise<{ outputData: Uint8Array; outputFilename: string }> {
+  ): Promise<{
+    outputData: Uint8Array;
+    outputFilename: string;
+    conversionType?: "Stream Copy" | "Full Re-Encode";
+    explanation?: string;
+  }> {
     const existingList = Array.from(existingFilenames || []);
 
     try {
@@ -164,10 +169,12 @@ export class ConversionService {
       return {
         outputData: outputBytes,
         outputFilename: result.outputFilename,
+        conversionType: result.conversionType,
+        explanation: result.explanation,
       };
     } catch (err) {
       console.warn("FFmpeg WASM error, switching to FallbackService transcoder:", err);
-      return await FallbackService.convert(
+      const fbResult = await FallbackService.convert(
         inputFile,
         metadata,
         targetFormat,
@@ -175,6 +182,11 @@ export class ConversionService {
         onProgress,
         existingList,
       );
+      return {
+        ...fbResult,
+        conversionType: "Full Re-Encode",
+        explanation: "Converted using emergency media engine fallback.",
+      };
     }
   }
 }

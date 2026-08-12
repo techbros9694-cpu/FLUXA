@@ -357,7 +357,12 @@ export function useConverter() {
         }
 
         const currentItem = queue[i];
-        if (currentItem.status === "completed") continue;
+        if (
+          currentItem.status === "completed" ||
+          currentItem.status === "failed" ||
+          currentItem.status === "cancelled"
+        )
+          continue;
 
         // Yield to UI thread to maintain smoothness
         await new Promise((resolve) => setTimeout(resolve, 16));
@@ -366,9 +371,21 @@ export function useConverter() {
           DownloadService.revokeUrl(currentItem.result.downloadUrl);
         }
 
+        const itemStartTime = performance.now();
+
         setQueue((prev) =>
           prev.map((item, idx) =>
-            idx === i ? { ...item, status: "converting", progress: 0, error: null } : item,
+            idx === i
+              ? {
+                  ...item,
+                  status: "converting",
+                  progress: 0,
+                  error: null,
+                  startTime: itemStartTime,
+                  endTime: undefined,
+                  conversionTimeSeconds: undefined,
+                }
+              : item,
           ),
         );
 
@@ -403,55 +420,59 @@ export function useConverter() {
             .map((item) => item.result?.filename)
             .filter((name): name is string => Boolean(name));
 
-          const { outputData, outputFilename } = await ConversionService.convertVideo(
-            currentItem.id,
-            currentItem.file,
-            meta,
-            currentItem.outputFormat,
-            currentItem.advancedSettings,
-            (payload) => {
-              setQueue((prev) =>
-                prev.map((item, idx) =>
-                  idx === i
-                    ? {
-                        ...item,
-                        progress: payload.pct,
-                        stage: payload.stage,
-                        elapsedSeconds: payload.elapsedSec,
-                        etaSeconds: payload.remainingSec,
-                        speed: payload.speed,
-                        fps: payload.fps,
-                        throughputMBs: payload.throughputMBs,
-                        threads: payload.threads,
-                        conversionType: payload.conversionType,
-                        explanation: payload.explanation,
-                      }
-                    : item,
-                ),
-              );
-              setProgress({
-                percentage: payload.pct,
-                timeSeconds: payload.timeSec,
-                speed: payload.speed,
-                fps: payload.fps,
-                throughputMBs: payload.throughputMBs,
-                threads: payload.threads,
-                stage: payload.stage,
-                conversionType: payload.conversionType,
-                explanation: payload.explanation,
-                etaSeconds: payload.remainingSec,
-                funnyMessage: FUNNY_LOADING_MESSAGES[0],
-                statusText: `${payload.stage} (${payload.pct}%)`,
-              });
-            },
-            existingFilenames,
-          );
+          const { outputData, outputFilename, conversionType, explanation } =
+            await ConversionService.convertVideo(
+              currentItem.id,
+              currentItem.file,
+              meta,
+              currentItem.outputFormat,
+              currentItem.advancedSettings,
+              (payload) => {
+                setQueue((prev) =>
+                  prev.map((item, idx) =>
+                    idx === i
+                      ? {
+                          ...item,
+                          progress: payload.pct,
+                          stage: payload.stage,
+                          elapsedSeconds: payload.elapsedSec,
+                          etaSeconds: payload.remainingSec,
+                          speed: payload.speed,
+                          fps: payload.fps,
+                          throughputMBs: payload.throughputMBs,
+                          threads: payload.threads,
+                          conversionType: payload.conversionType,
+                          explanation: payload.explanation,
+                        }
+                      : item,
+                  ),
+                );
+                setProgress({
+                  percentage: payload.pct,
+                  timeSeconds: payload.timeSec,
+                  speed: payload.speed,
+                  fps: payload.fps,
+                  throughputMBs: payload.throughputMBs,
+                  threads: payload.threads,
+                  stage: payload.stage,
+                  conversionType: payload.conversionType,
+                  explanation: payload.explanation,
+                  etaSeconds: payload.remainingSec,
+                  funnyMessage: FUNNY_LOADING_MESSAGES[0],
+                  statusText: `${payload.stage} (${payload.pct}%)`,
+                });
+              },
+              existingFilenames,
+            );
 
           const { blob, url } = DownloadService.createDownloadUrl(
             outputData,
             currentItem.outputFormat,
           );
           const outputSizeFormatted = formatBytes(outputData.byteLength);
+
+          const itemEndTime = performance.now();
+          const durationSec = Math.max(0.01, (itemEndTime - itemStartTime) / 1000);
 
           const conversionRes = {
             blob,
@@ -463,8 +484,9 @@ export function useConverter() {
             outputSizeFormatted,
             outputSizeBytes: outputData.byteLength,
             durationSeconds: meta.duration,
-            conversionType: currentItem.conversionType || "Full Re-Encode",
-            explanation: currentItem.explanation,
+            conversionType: conversionType || currentItem.conversionType || "Full Re-Encode",
+            explanation: explanation || currentItem.explanation,
+            conversionTimeSeconds: durationSec,
           };
 
           setQueue((prev) =>
@@ -475,6 +497,8 @@ export function useConverter() {
                     status: "completed",
                     progress: 100,
                     stage: "Finished",
+                    endTime: itemEndTime,
+                    conversionTimeSeconds: durationSec,
                     result: conversionRes,
                   }
                 : item,
@@ -485,6 +509,9 @@ export function useConverter() {
             err instanceof Error ? err.message : "Conversion failed in browser FFmpeg worker.";
           console.error(`Failed converting ${currentItem.file.name}:`, err);
 
+          const itemEndTime = performance.now();
+          const durationSec = Math.max(0.01, (itemEndTime - itemStartTime) / 1000);
+
           setQueue((prev) =>
             prev.map((item, idx) =>
               idx === i
@@ -493,6 +520,8 @@ export function useConverter() {
                     status: "failed",
                     progress: 0,
                     stage: "Failed",
+                    endTime: itemEndTime,
+                    conversionTimeSeconds: durationSec,
                     error: errMsg,
                   }
                 : item,
@@ -522,7 +551,17 @@ export function useConverter() {
   const retryFailedItems = useCallback(() => {
     setQueue((prev) =>
       prev.map((item) =>
-        item.status === "failed" ? { ...item, status: "waiting", progress: 0, error: null } : item,
+        item.status === "failed" || item.status === "cancelled"
+          ? {
+              ...item,
+              status: "waiting",
+              progress: 0,
+              error: null,
+              startTime: undefined,
+              endTime: undefined,
+              conversionTimeSeconds: undefined,
+            }
+          : item,
       ),
     );
     setTimeout(() => {
@@ -537,7 +576,17 @@ export function useConverter() {
     (id: string) => {
       setQueue((prev) =>
         prev.map((item) =>
-          item.id === id ? { ...item, status: "waiting", progress: 0, error: null } : item,
+          item.id === id
+            ? {
+                ...item,
+                status: "waiting",
+                progress: 0,
+                error: null,
+                startTime: undefined,
+                endTime: undefined,
+                conversionTimeSeconds: undefined,
+              }
+            : item,
         ),
       );
       setTimeout(() => {
@@ -553,11 +602,24 @@ export function useConverter() {
   const cancelConversion = useCallback(() => {
     cancelRequestedRef.current = true;
     isConvertingRef.current = false;
+    const cancelTime = performance.now();
     setStep("configured");
     setQueue((prev) =>
-      prev.map((item) =>
-        item.status === "converting" ? { ...item, status: "waiting", progress: 0 } : item,
-      ),
+      prev.map((item) => {
+        if (item.status === "converting") {
+          const durationSec = item.startTime
+            ? Math.max(0.01, (cancelTime - item.startTime) / 1000)
+            : 0;
+          return {
+            ...item,
+            status: "cancelled",
+            stage: "Cancelled",
+            endTime: cancelTime,
+            conversionTimeSeconds: durationSec,
+          };
+        }
+        return item;
+      }),
     );
   }, []);
 

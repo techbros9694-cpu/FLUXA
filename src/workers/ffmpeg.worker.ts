@@ -136,90 +136,172 @@ function checkStreamCopyCandidate(
     return {
       isCandidate: false,
       explanation:
-        "Full re-encoding is active because custom encoding settings or quality overrides were requested.",
+        "Optimized re-encoding active: custom encoding parameters (resolution, frame rate, codec override, or audio quality) were explicitly requested.",
     };
   }
 
-  const inFmt = inputExt.toUpperCase();
+  const inFmt = (inputExt || metadata.format || "MP4").toUpperCase();
   const outFmt = outputFormat.toUpperCase();
 
-  const vCodec = (metadata.videoCodec || "").toLowerCase();
-  const aCodec = (metadata.audioCodec || "").toLowerCase();
+  const vCodecRaw = (metadata.videoCodec || "").toLowerCase();
+  const aCodecRaw = (metadata.audioCodec || "").toLowerCase();
 
-  const isMP4Family = (fmt: string) => ["MP4", "MOV", "M4V"].includes(fmt);
+  const isH264 =
+    vCodecRaw.includes("h264") ||
+    vCodecRaw.includes("avc") ||
+    vCodecRaw.includes("x264") ||
+    vCodecRaw.includes("mp4v");
+  const isHEVC =
+    vCodecRaw.includes("hevc") ||
+    vCodecRaw.includes("h265") ||
+    vCodecRaw.includes("hvc1") ||
+    vCodecRaw.includes("hev1") ||
+    vCodecRaw.includes("x265");
+  const isAV1 = vCodecRaw.includes("av1") || vCodecRaw.includes("av01");
+  const isVP9 = vCodecRaw.includes("vp9") || vCodecRaw.includes("vp09");
+  const isVP8 = vCodecRaw.includes("vp8") || vCodecRaw.includes("v_vp8");
+  const isMPEG4 =
+    vCodecRaw.includes("mpeg4") || vCodecRaw.includes("xvid") || vCodecRaw.includes("divx");
+  const isMPEG2 = vCodecRaw.includes("mpeg2") || vCodecRaw.includes("mpg2");
 
+  const isAAC = aCodecRaw.includes("aac") || aCodecRaw.includes("mp4a");
+  const isMP3 = aCodecRaw.includes("mp3") || aCodecRaw.includes("lame");
+  const isAC3 = aCodecRaw.includes("ac3") || aCodecRaw.includes("eac3");
+  const isOpus = aCodecRaw.includes("opus");
+  const isVorbis = aCodecRaw.includes("vorbis");
+  const isPCM = aCodecRaw.includes("pcm") || aCodecRaw.includes("wav");
+  const isNoAudio = aCodecRaw.includes("none") || aCodecRaw.includes("mute") || !aCodecRaw;
+
+  // Case 1: Same input and output container format
   if (inFmt === outFmt) {
     return {
       isCandidate: true,
       explanation:
-        "Fast 100% loss-less stream copy applied because input and output container formats are identical.",
+        "Fast 100% loss-less stream copy applied: input and output container formats are identical.",
     };
   }
 
-  if (isMP4Family(inFmt) && isMP4Family(outFmt)) {
-    return {
-      isCandidate: true,
-      explanation: "Fast 100% loss-less stream copy applied between MP4 and MOV container formats.",
-    };
-  }
-
-  if (["MP4", "MOV", "M4V"].includes(outFmt)) {
-    const vOk =
-      vCodec.includes("h264") ||
-      vCodec.includes("hevc") ||
-      vCodec.includes("h265") ||
-      vCodec.includes("av1") ||
-      vCodec.includes("mpeg4");
-    const aOk =
-      aCodec.includes("aac") || aCodec.includes("mp3") || aCodec.includes("ac3") || !aCodec;
-    if (vOk && aOk) {
+  // Case 2: MP3 extraction
+  if (outFmt === "MP3") {
+    if (isMP3) {
       return {
         isCandidate: true,
         explanation:
-          "Fast 100% loss-less stream copy applied because source video and audio streams are natively compatible with MP4 container.",
+          "Fast 100% loss-less stream copy applied: extracting native MP3 audio stream directly.",
       };
     }
+    return {
+      isCandidate: false,
+      explanation: "Optimized audio encoding active: transcoding audio stream into 256kbps MP3.",
+    };
   }
 
+  // Case 3: GIF output (always requires palette & frame sequence)
+  if (outFmt === "GIF") {
+    return {
+      isCandidate: false,
+      explanation:
+        "Optimized animation rendering active: generating GIF color palette and frame sequence.",
+    };
+  }
+
+  // Case 4: MKV Container (Matroska natively accepts almost all codecs)
   if (outFmt === "MKV") {
     return {
       isCandidate: true,
       explanation:
-        "Fast 100% loss-less stream copy applied because MKV container natively accepts source streams.",
+        "Fast 100% loss-less stream copy (remuxing) applied: Matroska (MKV) container natively accepts source video and audio streams.",
     };
   }
 
-  if (outFmt === "WEBM") {
-    const vOk = vCodec.includes("vp9") || vCodec.includes("vp8") || vCodec.includes("av1");
-    const aOk = aCodec.includes("opus") || aCodec.includes("vorbis") || !aCodec;
+  // Case 5: MP4 / MOV / M4V Containers
+  if (["MP4", "MOV", "M4V"].includes(outFmt)) {
+    const isMP4Family = (fmt: string) => ["MP4", "MOV", "M4V", "3GP"].includes(fmt);
+    if (isMP4Family(inFmt)) {
+      return {
+        isCandidate: true,
+        explanation: `Fast 100% loss-less stream copy (remuxing) applied: source ${inFmt} streams are natively compatible with ${outFmt} container.`,
+      };
+    }
+
+    const vOk = isH264 || isHEVC || isAV1 || isVP9 || isMPEG4;
+    const aOk = isAAC || isMP3 || isAC3 || isOpus || isNoAudio;
+
     if (vOk && aOk) {
       return {
         isCandidate: true,
-        explanation: "Fast 100% loss-less stream copy applied for WebM compatible streams.",
+        explanation: `Fast 100% loss-less stream copy (remuxing) applied: source video and audio streams are natively compatible with ${outFmt} container.`,
       };
     }
+
+    return {
+      isCandidate: false,
+      explanation: `Optimized re-encoding active: source codecs require transcoding to be compatible with ${outFmt} container.`,
+    };
   }
 
+  // Case 6: WEBM Container
+  if (outFmt === "WEBM") {
+    const vOk = isVP8 || isVP9 || isAV1;
+    const aOk = isOpus || isVorbis || isNoAudio;
+
+    if (vOk && aOk) {
+      return {
+        isCandidate: true,
+        explanation:
+          "Fast 100% loss-less stream copy applied: source streams are natively compatible with WebM container.",
+      };
+    }
+
+    return {
+      isCandidate: false,
+      explanation:
+        "Optimized encoding active: source streams transcoded to WebM-compatible VP9/Opus codecs.",
+    };
+  }
+
+  // Case 7: AVI Container
+  if (outFmt === "AVI") {
+    const vOk = isMPEG4 || isH264;
+    const aOk = isMP3 || isPCM || isAC3 || isNoAudio;
+
+    if (vOk && aOk) {
+      return {
+        isCandidate: true,
+        explanation:
+          "Fast 100% loss-less stream copy applied: source streams are natively compatible with AVI container.",
+      };
+    }
+
+    return {
+      isCandidate: false,
+      explanation:
+        "Optimized encoding active: source streams transcoded to AVI-compatible MPEG-4/MP3 codecs.",
+    };
+  }
+
+  // Case 8: TS Container
   if (outFmt === "TS") {
-    const vOk =
-      vCodec.includes("h264") ||
-      vCodec.includes("hevc") ||
-      vCodec.includes("h265") ||
-      vCodec.includes("mpeg2");
-    const aOk =
-      aCodec.includes("aac") || aCodec.includes("mp3") || aCodec.includes("ac3") || !aCodec;
+    const vOk = isH264 || isHEVC || isMPEG2;
+    const aOk = isAAC || isMP3 || isAC3 || isNoAudio;
+
     if (vOk && aOk) {
       return {
         isCandidate: true,
         explanation: "Fast 100% loss-less stream copy applied for MPEG-TS transport container.",
       };
     }
+
+    return {
+      isCandidate: false,
+      explanation:
+        "Optimized encoding active: transcoding streams for MPEG-TS transport container.",
+    };
   }
 
   return {
     isCandidate: false,
-    explanation:
-      "Full re-encoding is active to transcode streams into target container format safely.",
+    explanation: `Optimized re-encoding active to transcode streams into ${outFmt} container format safely.`,
   };
 }
 
@@ -238,19 +320,21 @@ function buildFormatFallbackArgs(
         "-c:v",
         "libvpx-vp9",
         "-deadline",
-        "good",
+        "realtime",
         "-cpu-used",
+        "8",
+        "-tile-columns",
         "2",
+        "-row-mt",
+        "1",
         "-crf",
-        "22",
+        "28",
         "-b:v",
         "0",
         "-pix_fmt",
         "yuv420p",
         "-c:a",
-        "libvorbis",
-        "-b:a",
-        "192k",
+        "libopus",
         "-y",
         outputVirtualName,
       ];
@@ -283,7 +367,7 @@ function buildFormatFallbackArgs(
         "-c:v",
         "mpeg4",
         "-q:v",
-        "3",
+        "4",
         "-c:a",
         "mp3",
         "-b:a",
@@ -298,7 +382,7 @@ function buildFormatFallbackArgs(
         "-c:v",
         "wmv2",
         "-q:v",
-        "3",
+        "4",
         "-c:a",
         "wmav2",
         "-b:a",
@@ -315,9 +399,9 @@ function buildFormatFallbackArgs(
         "-c:v",
         "libx264",
         "-preset",
-        "fast",
+        "superfast",
         "-crf",
-        "19",
+        "20",
         "-pix_fmt",
         "yuv420p",
         "-c:a",
@@ -340,34 +424,33 @@ function buildFFmpegArgs(
   const args: string[] = ["-i", inputFilename];
   const preset = advanced?.qualityPreset || "Balanced";
 
-  // Codec presets focusing on pristine visual quality over aggressive compression
-  // Balanced is the default: CRF 20 / preset fast preserves crisp details & original quality
-  let h264Preset = "fast";
-  let h264Crf = "19";
+  // Codec presets optimized for ultra-fast conversion speed while maintaining high quality
+  let h264Preset = "superfast";
+  let h264Crf = "20";
 
-  let h265Preset = "fast";
-  let h265Crf = "21";
+  let h265Preset = "ultrafast";
+  let h265Crf = "23";
 
-  let vp9Deadline = "good";
-  let vp9CpuUsed = "2";
-  let vp9Crf = "22";
+  let vp9Deadline = "realtime";
+  let vp9CpuUsed = "8";
+  let vp9Crf = "28";
 
   if (preset === "High Quality") {
-    h264Preset = "medium";
-    h264Crf = "17";
-    h265Preset = "medium";
-    h265Crf = "19";
-    vp9Deadline = "good";
-    vp9CpuUsed = "1";
-    vp9Crf = "18";
-  } else if (preset === "Small Size") {
-    h264Preset = "faster";
-    h264Crf = "24";
-    h265Preset = "faster";
-    h265Crf = "26";
+    h264Preset = "fast";
+    h264Crf = "18";
+    h265Preset = "superfast";
+    h265Crf = "20";
     vp9Deadline = "realtime";
-    vp9CpuUsed = "4";
-    vp9Crf = "30";
+    vp9CpuUsed = "5";
+    vp9Crf = "22";
+  } else if (preset === "Small Size") {
+    h264Preset = "ultrafast";
+    h264Crf = "25";
+    h265Preset = "ultrafast";
+    h265Crf = "28";
+    vp9Deadline = "realtime";
+    vp9CpuUsed = "8";
+    vp9Crf = "32";
   }
 
   // 1. Audio-only (MP3)
