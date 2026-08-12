@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 
 const EMOJIS = ["✨", "🎬", "😂", "🍿", "💾", "🚀", "📹", "📼"];
 
-type Sticker = { id: number; emoji: string; left: number; duration: number; size: number };
+type Sticker = { id: string; emoji: string; left: number; duration: number; size: number };
 
 export function Stickers() {
   const [items, setItems] = useState<Sticker[]>([]);
   useEffect(() => {
-    let id = 0;
+    let count = 0;
     const spawn = () => {
       const s: Sticker = {
-        id: id++,
+        id: `sticker-${Date.now()}-${Math.random().toString(36).substring(2, 7)}-${count++}`,
         emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)],
         left: Math.random() * 100,
         duration: 8 + Math.random() * 6,

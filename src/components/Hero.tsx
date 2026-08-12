@@ -72,7 +72,7 @@ export function Hero() {
           className="mt-6 text-4xl font-black leading-[1.05] text-ink sm:text-7xl md:text-8xl dark:text-white tracking-tight"
         >
           {headline.map((w, i) => (
-            <span key={i} data-word className="mr-2 sm:mr-4 inline-block my-1">
+            <span key={`${w}-${i}`} data-word className="mr-2 sm:mr-4 inline-block my-1">
               {w === "Crying." ? (
                 <span className="relative inline-block rounded-2xl sm:rounded-3xl bg-lime px-3 sm:px-5 py-0.5 sm:py-1 text-neutral-950 shadow-lg dark:bg-lime dark:text-neutral-950 border border-lime-bright">
                   Crying.

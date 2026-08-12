@@ -1204,7 +1204,7 @@ function CompletionSummaryScreen({
         </h4>
 
         <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1 scrollbar-thin">
-          {queue.map((item, idx) => (
+          {completedItems.map((item, idx) => (
             <QueueItemRow
               key={item.id}
               item={item}
