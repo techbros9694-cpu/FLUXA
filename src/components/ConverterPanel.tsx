@@ -818,9 +818,10 @@ function ConversionDashboardView({
   const totalFiles = queue.length;
   const completedCount = queue.filter((i) => i.status === "completed").length;
   const failedCount = queue.filter((i) => i.status === "failed").length;
+  const cancelledCount = queue.filter((i) => i.status === "cancelled").length;
   const remainingCount = Math.max(
     0,
-    totalFiles - completedCount - failedCount - (convertingIdx >= 0 ? 1 : 0),
+    totalFiles - completedCount - failedCount - cancelledCount - (convertingIdx >= 0 ? 1 : 0),
   );
 
   const currentItemInputFormat = getItemInputFormat(currentFile);
