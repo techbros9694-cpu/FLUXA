@@ -1258,6 +1258,7 @@ const QueueItemRow = memo(function QueueItemRow({
   const isConverting = item.status === "converting";
   const isCompleted = item.status === "completed";
   const isFailed = item.status === "failed";
+  const isCancelled = item.status === "cancelled";
 
   const itemInputFormat = getItemInputFormat(item);
 
@@ -1270,7 +1271,9 @@ const QueueItemRow = memo(function QueueItemRow({
             ? "border-lime/30 bg-surface/90 dark:bg-surface-2/90"
             : isFailed
               ? "border-red-500/30 bg-red-500/5 dark:bg-red-500/10"
-              : "border-ink/10 bg-white dark:bg-surface dark:border-white/10"
+              : isCancelled
+                ? "border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10"
+                : "border-ink/10 bg-white dark:bg-surface dark:border-white/10"
       }`}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1284,7 +1287,9 @@ const QueueItemRow = memo(function QueueItemRow({
                   ? "bg-lime text-neutral-950 animate-pulse"
                   : isFailed
                     ? "bg-red-500 text-white"
-                    : "bg-surface-2 text-ink dark:text-white"
+                    : isCancelled
+                      ? "bg-amber-500 text-white"
+                      : "bg-surface-2 text-ink dark:text-white"
             }`}
           >
             {isCompleted ? (
@@ -1292,6 +1297,8 @@ const QueueItemRow = memo(function QueueItemRow({
             ) : isConverting ? (
               <Sparkles className="h-4 w-4 animate-spin" />
             ) : isFailed ? (
+              <AlertCircle className="h-4 w-4" />
+            ) : isCancelled ? (
               <AlertCircle className="h-4 w-4" />
             ) : (
               `#${index}`
