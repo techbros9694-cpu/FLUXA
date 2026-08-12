@@ -1481,11 +1481,15 @@ const StatusTag = memo(function StatusTag({ item }: { item: BatchItem }) {
           />
         </div>
       );
-    case "completed":
+    case "completed": {
+      const method = item.conversionType || item.result?.conversionType || "Stream Copy";
       return (
         <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-lime/20 text-neutral-950 dark:text-lime border border-lime/30">
             <CheckCircle2 className="h-3 w-3 text-lime" /> ✓ Completed
+          </span>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-lime/10 text-lime-bright dark:text-lime border border-lime/30">
+            Method: {method}
           </span>
           <span className="text-xs font-bold text-ink/80 dark:text-white/80 flex items-center gap-1">
             Conversion time:{" "}
@@ -1501,6 +1505,7 @@ const StatusTag = memo(function StatusTag({ item }: { item: BatchItem }) {
           </span>
         </div>
       );
+    }
     case "failed":
       return (
         <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">

@@ -499,6 +499,8 @@ export function useConverter() {
                     stage: "Finished",
                     endTime: itemEndTime,
                     conversionTimeSeconds: durationSec,
+                    conversionType: conversionRes.conversionType,
+                    explanation: conversionRes.explanation,
                     result: conversionRes,
                   }
                 : item,
