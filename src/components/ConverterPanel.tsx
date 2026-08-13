@@ -1235,6 +1235,94 @@ function CompletionSummaryScreen({
   );
 }
 
+function getOutputCodecs(item: BatchItem): { videoCodec: string; audioCodec: string } {
+  const isStreamCopy = (item.conversionType || item.result?.conversionType) === "Stream Copy";
+  const sourceVideoCodec = formatCodecName(item.metadata?.videoCodec || "H.264");
+  const sourceAudioCodec = formatCodecName(item.metadata?.audioCodec || "AAC");
+
+  if (isStreamCopy) {
+    return {
+      videoCodec: sourceVideoCodec,
+      audioCodec: sourceAudioCodec,
+    };
+  }
+
+  // Full Re-Encode
+  const fmt = item.outputFormat.toUpperCase();
+  const advanced = item.advancedSettings;
+
+  let vCodec = "H.264";
+  let aCodec = "AAC";
+
+  if (fmt === "WEBM") {
+    vCodec = "VP9";
+    aCodec = "Opus";
+  } else if (fmt === "AVI") {
+    vCodec = "MPEG-4";
+    aCodec = "MP3";
+  } else if (fmt === "MP3") {
+    vCodec = "None";
+    aCodec = "MP3";
+  } else if (fmt === "GIF") {
+    vCodec = "GIF";
+    aCodec = "None";
+  } else if (fmt === "WMV") {
+    vCodec = "WMV2";
+    aCodec = "WMA";
+  } else if (fmt === "FLV") {
+    vCodec = "FLV1";
+    aCodec = "MP3";
+  } else if (fmt === "MPEG") {
+    vCodec = "MPEG-2";
+    aCodec = "MP2";
+  } else if (fmt === "OGV") {
+    vCodec = "Theora";
+    aCodec = "Vorbis";
+  } else if (fmt === "3GP") {
+    vCodec = "H.263";
+    aCodec = "AMR";
+  } else {
+    // MP4, MOV, MKV, TS, M4V
+    if (advanced?.videoCodec && !advanced.videoCodec.includes("Auto")) {
+      if (advanced.videoCodec.includes("H.265") || advanced.videoCodec.includes("HEVC"))
+        vCodec = "HEVC";
+      else if (advanced.videoCodec.includes("VP9")) vCodec = "VP9";
+      else if (advanced.videoCodec.includes("AV1")) vCodec = "AV1";
+      else if (advanced.videoCodec.includes("ProRes")) vCodec = "ProRes";
+      else vCodec = "H.264";
+    } else {
+      vCodec = "H.264";
+    }
+    aCodec = "AAC";
+  }
+
+  if (advanced?.audioQuality === "Mute Audio") {
+    aCodec = "None";
+  }
+
+  return { videoCodec: vCodec, audioCodec: aCodec };
+}
+
+function formatCodecName(raw: string): string {
+  if (!raw) return "Unknown";
+  const lower = raw.toLowerCase();
+  if (lower.includes("h264") || lower.includes("avc") || lower.includes("x264")) return "H.264";
+  if (lower.includes("hevc") || lower.includes("h265") || lower.includes("x265")) return "HEVC";
+  if (lower.includes("vp9")) return "VP9";
+  if (lower.includes("vp8")) return "VP8";
+  if (lower.includes("av1") || lower.includes("av01")) return "AV1";
+  if (lower.includes("mpeg4") || lower.includes("xvid")) return "MPEG-4";
+  if (lower.includes("mpeg2")) return "MPEG-2";
+  if (lower.includes("aac") || lower.includes("mp4a")) return "AAC";
+  if (lower.includes("mp3")) return "MP3";
+  if (lower.includes("opus")) return "Opus";
+  if (lower.includes("vorbis")) return "Vorbis";
+  if (lower.includes("ac3")) return "AC3";
+  if (lower.includes("pcm")) return "PCM";
+  if (lower.includes("none") || lower.includes("mute")) return "None";
+  return raw.toUpperCase();
+}
+
 /**
  * INDIVIDUAL QUEUE ROW COMPONENT
  */
@@ -1433,15 +1521,46 @@ const QueueItemRow = memo(function QueueItemRow({
       )}
 
       {/* COMPLETED RESULT STATS */}
-      {isCompleted && item.result && (
-        <div className="mt-2 pt-2 border-t border-ink/5 dark:border-white/5 flex items-center justify-between text-[11px] text-ink/60 dark:text-white/60 font-semibold">
-          <span>
-            Output name:{" "}
-            <strong className="text-ink dark:text-white">{item.result.filename}</strong>
-          </span>
-          <span className="text-lime-bright font-bold">
-            Size: {item.result.outputSizeFormatted}
-          </span>
+      {isCompleted && (
+        <div className="mt-2.5 border-t border-ink/10 pt-2.5 text-xs dark:border-white/10 flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-lg border border-ink/10 bg-ink/5 px-2.5 py-0.5 font-extrabold text-ink dark:border-white/10 dark:bg-white/10 dark:text-white">
+              {itemInputFormat} → {item.outputFormat}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-lg border border-lime/30 bg-lime/15 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-950 dark:text-lime">
+              Method: {item.conversionType || item.result?.conversionType || "Stream Copy"}
+            </span>
+            <span className="font-medium text-ink/80 dark:text-white/80">
+              Video:{" "}
+              <strong className="font-bold text-ink dark:text-white">
+                {getOutputCodecs(item).videoCodec}
+              </strong>
+            </span>
+            <span className="font-medium text-ink/80 dark:text-white/80">
+              Audio:{" "}
+              <strong className="font-bold text-ink dark:text-white">
+                {getOutputCodecs(item).audioCodec}
+              </strong>
+            </span>
+            <span className="font-bold text-lime-bright dark:text-lime">
+              Time:{" "}
+              <ItemConversionTimer
+                startTime={item.startTime}
+                endTime={item.endTime}
+                conversionTimeSeconds={item.conversionTimeSeconds}
+                status={item.status}
+                includeHundredths={true}
+                className="text-xs font-black text-lime-bright dark:text-lime"
+                prefix=""
+              />
+            </span>
+          </div>
+          {item.result && (
+            <div className="text-[11px] font-semibold text-ink/60 dark:text-white/60">
+              Output: <strong className="text-ink dark:text-white">{item.result.filename}</strong> (
+              {item.result.outputSizeFormatted})
+            </div>
+          )}
         </div>
       )}
 
